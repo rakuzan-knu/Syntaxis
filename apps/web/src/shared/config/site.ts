@@ -1,9 +1,8 @@
 export const BRAND = 'Syntaxis';
 
-export const SITE_URL = (import.meta.env.VITE_SITE_URL ?? 'https://syntaxis.vercel.app').replace(
-  /\/$/,
-  '',
-);
+export const SITE_URL = (
+  import.meta.env.VITE_SITE_URL ?? 'https://syntaxis-dev.vercel.app'
+).replace(/\/$/, '');
 
 export const TELEGRAM_HANDLE = 'gmblesssed';
 

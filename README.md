@@ -65,7 +65,7 @@ The Telegram handle and site URL are in `apps/web/src/shared/config/site.ts`.
 2. Add environment variables:
    - `ENABLE_EXPERIMENTAL_COREPACK=1`, so Vercel uses the pnpm version pinned in `package.json`.
    - `VITE_SITE_URL=https://your-domain`, used for canonical URLs, hreflang, Open Graph and the
-     sitemap. Defaults to `https://syntaxis.vercel.app`.
+     sitemap. Defaults to `https://syntaxis-dev.vercel.app`.
 3. Deploy. Security headers (CSP, HSTS, frame and permissions policies) and immutable caching for
    hashed assets are configured in `vercel.json`.
 

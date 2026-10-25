@@ -38,4 +38,4 @@ jobs:
 
       - run: pnpm build
         env:
-          VITE_SITE_URL: https://syntaxis.vercel.app
+          VITE_SITE_URL: https://syntaxis-dev.vercel.app
