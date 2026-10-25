@@ -1,0 +1,43 @@
+# Syntaxis
+
+> Syntaxis is a Ukrainian studio of three engineers building custom websites and web applications for clients in Ukraine and worldwide. Prices are agreed per project after a short call.
+
+## Services
+
+- Websites and landing pages
+- Web applications: portals, CRMs, SaaS, dashboards
+- Interface design and design systems
+- Backend and APIs, including Ukrainian payment and delivery integrations
+- DevOps and cloud infrastructure
+- Security audits and hardening
+- Technical SEO
+- Performance optimisation (Core Web Vitals)
+- Outstaffing: a frontend, backend or DevOps engineer for your team, hourly or part-time, from one week
+
+## On the page
+
+Interactive, realistic demos of the work: an IDE with a live preview and dev-server log, a design tool, an API client, a deployment dashboard, browser DevTools with security headers, a Lighthouse report with a loading filmstrip, a pull request with a diff, and a Telegram brief. An Explain mode describes each window in plain language. The demo store "Zerno" is fictional.
+
+## Terms
+
+- Fixed price for an agreed scope, estimate within 48 hours
+- Payment in stages
+- 12 months of free bug fixes after launch (bugs against the agreed specification; redesigns, rewrites and new features are estimated separately)
+- Code, design files and access belong to the client
+- PageSpeed 90+ on mobile for sites built from scratch, measured at handover and written into the contract
+
+## Legal
+
+- Terms of Service: /en/terms
+- Privacy Policy: /en/privacy (no forms, accounts, analytics or trackers)
+- Cookie Policy: /en/cookies (the site sets no cookies)
+- Accessibility Statement: /en/accessibility (WCAG 2.2 AA target)
+- Legal Notice: /en/legal
+- Security Policy: /en/security, also /.well-known/security.txt
+- Ukrainian versions use the same paths without /en
+
+## Contact
+
+- Telegram: https://t.me/gmblesssed
+- Ukrainian version: /
+- English version: /en
