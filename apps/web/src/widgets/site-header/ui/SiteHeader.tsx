@@ -1,4 +1,5 @@
 import { Send } from 'lucide-react';
+import { PaletteTrigger } from '@/features/command-palette';
 import { LocaleSwitch } from '@/features/switch-locale';
 import type { LegalSlug } from '@/shared/config';
 import { localePath, useI18n } from '@/shared/i18n';
@@ -48,6 +49,7 @@ export function SiteHeader({ withNav = true, slug }: SiteHeaderProps) {
         ) : null}
 
         <div className="flex items-center gap-5">
+          {withNav ? <PaletteTrigger /> : null}
           <LocaleSwitch slug={slug} />
           <a
             href={telegramLink()}

@@ -18,16 +18,16 @@ first thing to try, an “Explain” mode with numbered callouts and a plain-lan
 
 ## Windows
 
-| Section     | Tool it reproduces         | What the visitor can do                                                                                                                                                                                                                                                                                                  |
-| :---------- | :------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Hero        | IDE + browser window       | A working editor (activity bar, file tree, tabs, breadcrumbs, Problems/Output/Terminal panel, lint, commit flow) next to a real browser: tabs, editable address bar, back/forward/reload, new-tab page; the Zerno store has home, catalog, product options, cart, checkout with validation, order confirmation and a 404 |
-| Design      | Design tool                | Two pages, layers with rename, hide and lock, hand tool and zoom, double-click text editing, a per-layer inspector, undo/redo, Prototype links with Present mode, Inspect with copyable CSS and a collaborator cursor during autoplay                                                                                    |
-| API         | API client                 | Run four endpoints, switch Production/Staging, try “all good”, “out of stock” and “card declined”; a phone shows what the customer sees for every response                                                                                                                                                               |
-| Deploy      | Deployment dashboard       | Redeploy or ship a broken commit (tests stop it, production stays on the old version), browse site versions and roll back instantly; the live preview follows production                                                                                                                                                 |
-| Security    | Browser DevTools + scanner | Toggle security headers, switch Network/Console/Application/Security tabs and run four attacks against a visitor’s screen: blocked or not                                                                                                                                                                                |
-| Performance | Lighthouse report          | Apply or revert optimisations, switch network and device, click a metric for a plain explanation, race the page before and after                                                                                                                                                                                         |
-| Outstaff    | Pull request page          | Comment on a diff line or request changes; the engineer replies, pushes a fix and checks rerun; approve, merge and see deployment start                                                                                                                                                                                  |
-| Brief       | Telegram chat              | Build the message in three steps, see a typing indicator and a sample reply, then open Telegram with the text (nothing is sent automatically)                                                                                                                                                                            |
+| Section     | Tool it reproduces         | What the visitor can do                                                                                                                                                                                                                                                                                                                                                                                         |
+| :---------- | :------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hero        | IDE + browser window       | VS Code-like editor: hover types, Ctrl+click to definition, context menu, Ctrl+F find and replace, Ctrl+P quick open, Tab inline completion (plain IntelliSense, no AI), terminal and commit flow. The browser has tabs, an address bar, history, F12 DevTools and a multi-page Zerno store with checkout and an AI shop assistant that asks about taste and brewing, recommends coffee and adds it to the cart |
+| Design      | Design tool                | Two pages, layers (rename, hide, lock), hand tool and zoom, frame width handle with reflow, button states, color variables with a light/dark mode switch, comment pins with replies, per-layer inspector, undo/redo, Prototype with Present mode, Inspect with copyable CSS and real SVG export                                                                                                                 |
+| API         | API client                 | Four endpoints, Production/Staging, scenarios (sold out, card declined, CRM down), Form or raw JSON body with real 400/422 validation, code snippets, a load test with autoscaling, an Integrations tab where a paid order fans out to CRM, Nova Poshta, Telegram and email with retries and backoff, and a phone showing what the customer sees                                                                |
+| Deploy      | Deployment dashboard       | Deployments, Analytics, Logs and Settings tabs; redeploy, broken commit stopped by tests, branch preview with Promote, instant rollback, a gradual (canary) release with a live error chart and automatic rollback, build-log filter, runtime log search, masked environment variables                                                                                                                          |
+| Security    | Browser DevTools + scanner | Security headers plus server protection; six attacks against a visitor’s screen; an attack log with attacker IPs, the guard that stopped each attack and owner alerts; OWASP Top 10 checklist and vulnerable dependencies with updates                                                                                                                                                                          |
+| Performance | Lighthouse report          | Lighthouse report with optimisations, network and device; real Web Vitals of this page; before/after image slider; before/after page race; a CI guard where adding a heavy library fails the bundle budget and blocks the merge until it is replaced                                                                                                                                                            |
+| Outstaff    | Pull request page          | A preview deployment of the branch that can be opened and used inside the PR; comment on a diff line or request changes; the engineer replies, pushes a fix and checks rerun; approve, merge and see deployment start; a weekly hours report tab                                                                                                                                                                |
+| Brief       | Telegram chat              | Three-step message builder with a ballpark in weeks and “what you get” list, typing indicator and sample reply; opens Telegram with the text (nothing is sent automatically)                                                                                                                                                                                                                                    |
 
 Rules for windows:
 
@@ -38,13 +38,27 @@ Rules for windows:
   `hmrLine`, `searchFiles`, `detectProblems`, `runCommand`, `composeBrief`, `highlight`, store
   routes and cart (`parseStorePath`, `addToCart`, `cartTotals`), browser history (`push`, `back`,
   `resolveAddress`), the design document (`updateNode`, `toggleHidden`, `rename`), undo history
-  (`commit` with coalescing keys, `undo`, `redo`) and `cssFor`.
+  (`commit` with coalescing keys, `undo`, `redo`), `cssFor`, color variables (`modeStyle`), the
+  shop assistant (`readPreferences`, `recommend`), integrations (`fanOut`), canary releases
+  (`canaryPoints`, `breachIndex`), the attack log (`recordIncident`) and the bundle budget
+  (`checkBudget`).
 - Every showcase has a “In plain words” caption that narrates the last action without jargon, and a
   glossary row of tappable terms (`PlainCaption`, `Glossary` in `shared/ui`).
 - Client guidance follows the task, not the tool: the store points to the next step (add to cart,
   open the cart, check out, place the order), the design tool to “select a layer” and “present”.
-- Autoplay runs through `useAutoplay`: once per page view, only in view, and never after the visitor
-  has touched the window. `prefers-reduced-motion` jumps to the final state.
+- Autoplay runs through `useAutoplay` on a pausable timeline (`shared/lib/timeline.ts`). A guide
+  cursor (“Syntaxis engineer”) moves to elements marked `data-guide` and presses real controls, so
+  every demo step goes through the same handlers a visitor uses. `DemoPlayer` under each window
+  offers play/pause, chapters and replay; the demo pauses out of view and hands control over on the
+  first real click or key press, while processes it started (builds, requests) finish in real time.
+  `prefers-reduced-motion` jumps to the final state.
+- Desktop windows (`DesktopWindow`) can be dragged by their title bar, focused, minimised to a dock
+  and shown alone with the green button; on touch screens and below 1024 px they stay static.
+- `Ctrl+K` opens the command palette (`features/command-palette`): jump to a section or run any demo
+  chapter via the command bus; `?` lists keyboard shortcuts.
+- AI appears only as a feature built for the client’s business (the Zerno shop assistant), never as
+  the tool that writes our code. The assistant is a scripted, tested model
+  (`entities/demo-store/model/consultant.ts`) and is labelled as a demo.
 - Tool chrome stays in English, as in the real tools. Everything a client must understand (hints,
   callouts, benefits, attack status) is localised.
 - No third-party logos. Demo content is labelled; the coffee store “Zerno” is fictional.
@@ -89,8 +103,9 @@ numeric readouts. Both are self-hosted with Latin and Cyrillic subsets.
 
 ## Quality bar
 
-Lighthouse mobile on the production build: Performance 84–88 (varies with machine load), Accessibility
-100, Best Practices 100, SEO 100, CLS 0, in both themes. Client JavaScript about 143 KB gzip on first
-load, including only the current language's dictionary (`loadDictionary`, preloaded per page by the
-prerender; `getDictionary` in `shared/i18n/server` is for prerendering and tests only). IDE side
-panels, store pages beyond home, Figma Prototype/Inspect panels and Present mode load on demand. No horizontal page scroll from 360 px up.
+Lighthouse mobile on the production build (local, pessimistic; PageSpeed Insights scores higher):
+Performance 70–84 (varies run to run), Accessibility 100, Best Practices 100, SEO 100, CLS 0. Client JavaScript on first
+load: about 93 KB gzip main bundle plus the current language's dictionary (`loadDictionary`, preloaded
+per page). Demo sections hydrate on approach (`deferred`); IDE side panels, store pages beyond home,
+Figma Prototype/Inspect and Present mode load on demand. The scroll tilt of desktops runs only from
+1024 px, so tall windows on phones are never shown compressed. No horizontal page scroll from 360 px up.

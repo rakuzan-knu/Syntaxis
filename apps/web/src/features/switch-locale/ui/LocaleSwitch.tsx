@@ -23,7 +23,7 @@ export function LocaleSwitch({ className = '', slug }: LocaleSwitchProps) {
               lang={item}
               aria-label={`${SHORT[item]}, ${NATIVE[item]}`}
               aria-current={item === locale ? 'true' : undefined}
-              className={`link-underline py-1 ${item === locale ? 'text-ink' : 'text-muted hover:text-ink'}`}
+              className={`link-underline relative py-1 after:absolute after:inset-y-0 after:-inset-x-1 ${item === locale ? 'text-ink' : 'text-muted hover:text-ink'}`}
             >
               {SHORT[item]}
             </a>

@@ -4,7 +4,7 @@ export type EndpointId = 'products' | 'createOrder' | 'getOrder' | 'webhook';
 export type Scenario = 'ok' | 'outOfStock' | 'declined';
 export type Environment = 'production' | 'staging';
 export type Outcome =
-  'products' | 'created' | 'outOfStock' | 'declined' | 'paid' | 'notFound' | 'webhook';
+  'products' | 'created' | 'outOfStock' | 'declined' | 'paid' | 'notFound' | 'webhook' | 'invalid';
 
 export interface Endpoint {
   id: EndpointId;
@@ -50,9 +50,11 @@ const PRODUCTS = [
 const STATUS_TEXT: Record<number, string> = {
   200: 'OK',
   201: 'Created',
+  400: 'Bad Request',
   402: 'Payment Required',
   404: 'Not Found',
   409: 'Conflict',
+  422: 'Unprocessable Entity',
 };
 
 function byteSize(body: unknown): number {
@@ -144,6 +146,22 @@ export function respond(endpoint: EndpointId, context: Context): ApiResult {
         'webhook',
       );
   }
+}
+
+export function invalidResult(
+  status: number,
+  body: unknown,
+  sequence: number,
+  environment: Environment = 'production',
+): ApiResult {
+  return finish(
+    status,
+    body,
+    12 + ((sequence * 29) % 9),
+    requestId(sequence),
+    'invalid',
+    environment,
+  );
 }
 
 export function formatSize(bytes: number): string {

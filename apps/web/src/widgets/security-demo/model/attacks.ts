@@ -1,13 +1,17 @@
 import type { ConsoleMessage } from './console';
 
-export type AttackId = 'xss' | 'clickjack' | 'downgrade' | 'camera';
+export type AttackId = 'xss' | 'clickjack' | 'downgrade' | 'camera' | 'bruteforce' | 'sqli';
 
 export const ATTACKS: readonly { id: AttackId; guard: string }[] = [
   { id: 'xss', guard: 'csp' },
   { id: 'clickjack', guard: 'frame' },
   { id: 'downgrade', guard: 'hsts' },
   { id: 'camera', guard: 'permissions' },
+  { id: 'bruteforce', guard: 'rateLimit' },
+  { id: 'sqli', guard: 'sqlParams' },
 ];
+
+export const SERVER_GUARDS = ['rateLimit', 'sqlParams'] as const;
 
 export function isBlocked(id: AttackId, enabled: readonly string[]): boolean {
   const guard = ATTACKS.find((attack) => attack.id === id)?.guard;
@@ -32,6 +36,14 @@ const LOGS: Record<AttackId, { blocked: string; succeeded: string }> = {
   camera: {
     blocked: 'Permissions policy violation: camera is not allowed in this document.',
     succeeded: 'evil.example widget requested permission: camera.',
+  },
+  bruteforce: {
+    blocked: 'POST /api/login 429 Too Many Requests (5 attempts per 15 min per IP).',
+    succeeded: 'POST /api/login 200 OK after 1832 attempts — password guessed.',
+  },
+  sqli: {
+    blocked: "GET /api/search?q=' OR 1=1 -- 200: 0 results (query parameterized).",
+    succeeded: "GET /api/search?q=' OR 1=1 -- returned 4 812 customer rows.",
   },
 };
 

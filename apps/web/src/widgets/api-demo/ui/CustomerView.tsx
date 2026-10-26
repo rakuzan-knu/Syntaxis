@@ -18,6 +18,7 @@ const TONE: Record<Outcome, 'ok' | 'bad' | 'info'> = {
   paid: 'ok',
   notFound: 'bad',
   webhook: 'ok',
+  invalid: 'bad',
 };
 
 const ICON = {
@@ -28,6 +29,7 @@ const ICON = {
   paid: CircleCheck,
   notFound: CircleAlert,
   webhook: BellRing,
+  invalid: CircleAlert,
 } as const;
 
 function field(body: unknown, key: string): string {

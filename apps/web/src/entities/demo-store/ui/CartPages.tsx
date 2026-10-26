@@ -162,7 +162,7 @@ export function CartPage({ copy, accent, cart, hint, navigate, setCart }: StoreP
             cart={cart}
             action={
               <>
-                <StoreButton accent={accent} onClick={() => navigate('/checkout')}>
+                <StoreButton accent={accent} guide="checkout" onClick={() => navigate('/checkout')}>
                   {copy.cart.checkout}
                 </StoreButton>
                 <Guide label={hint} side="top" className="-top-1.5 -right-1.5" />
@@ -230,6 +230,7 @@ export function CheckoutPage({ copy, accent, cart, hint, navigate, setCart }: St
               onChange={(event) => setName(event.target.value)}
               onBlur={() => setTouched(true)}
               placeholder={copy.checkout.namePlaceholder}
+              data-guide="checkout-name"
               autoComplete="off"
               aria-invalid={touched && invalid}
               aria-describedby={touched && invalid ? `${id}-error` : undefined}
@@ -284,7 +285,7 @@ export function CheckoutPage({ copy, accent, cart, hint, navigate, setCart }: St
             cart={cart}
             action={
               <>
-                <StoreButton accent={accent} type="submit" disabled={placing}>
+                <StoreButton accent={accent} type="submit" disabled={placing} guide="place-order">
                   {placing ? copy.checkout.placing : copy.checkout.place}
                 </StoreButton>
                 <Guide label={placing ? null : hint} side="top" className="-top-1.5 -right-1.5" />

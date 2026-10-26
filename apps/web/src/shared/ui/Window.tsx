@@ -1,4 +1,5 @@
 import { useId, type KeyboardEvent, type ReactNode } from 'react';
+import { TrafficLights } from './TrafficLights';
 
 export interface WindowTab<T extends string> {
   id: T;
@@ -45,12 +46,11 @@ export function Window<T extends string>({
       data-tone={tone}
       className={`window flex flex-col overflow-hidden ${className}`}
     >
-      <div className="flex h-11 shrink-0 items-center gap-3 border-b border-win-line px-4">
-        <span aria-hidden="true" className="flex gap-1.5">
-          <span className="size-2.5 rounded-full bg-win-line" />
-          <span className="size-2.5 rounded-full bg-win-line" />
-          <span className="size-2.5 rounded-full bg-win-line" />
-        </span>
+      <div
+        data-drag-handle
+        className="flex h-11 shrink-0 items-center gap-3 border-b border-win-line px-4"
+      >
+        <TrafficLights muted />
         {tabs && onTabChange ? (
           <div
             role="tablist"

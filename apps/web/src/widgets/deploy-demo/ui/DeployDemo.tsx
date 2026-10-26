@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  ArrowUpRight,
+  Gauge,
   Bug,
   Check,
   Circle,
@@ -11,29 +13,59 @@ import {
   Lock,
   RotateCcw,
   RotateCw,
+  Search,
 } from 'lucide-react';
 import { DemoStore } from '@/entities/demo-store';
 import { useI18n } from '@/shared/i18n';
-import { fillTemplate, useAutoplay, usePrefersReducedMotion } from '@/shared/lib';
-import { Avatar, Callout, Hotspot, Showcase, Window } from '@/shared/ui';
+import { fillTemplate, useAutoplay, useDemoCommands, usePrefersReducedMotion } from '@/shared/lib';
 import {
-  VERSION_ACCENTS,
+  Avatar,
+  Callout,
+  DemoPlayer,
+  DesktopWindow,
+  GuideCursor,
+  Hotspot,
+  Showcase,
+  TrafficLights,
+  Window,
+} from '@/shared/ui';
+import {
   begin,
   initialState,
   isBuilding,
+  PREVIEW_VERSION,
   productionOf,
+  promote,
   rollback,
   select,
   settle,
+  VERSION_ACCENTS,
   type Commit,
-  type DeployState,
   type Deployment,
+  type DeployState,
+  type DeployTarget,
 } from '../model/deployments';
 import { STEP_MS, buildTimeline, totalDuration, type TimelineEvent } from '../model/timeline';
+import { CANARY_VERSION, breachIndex, canaryPoints } from '../model/canary';
+import { CanaryPanel } from './CanaryPanel';
+import { Insights, type Section } from './Insights';
 
-type Story = 'idle' | 'building' | 'ready' | 'failed' | 'rollback' | 'selected';
+type Story =
+  | 'idle'
+  | 'building'
+  | 'ready'
+  | 'failed'
+  | 'rollback'
+  | 'selected'
+  | 'preview'
+  | 'promoted'
+  | 'canary'
+  | 'canaryRollback';
 
-const NAV = ['Overview', 'Deployments', 'Analytics', 'Logs', 'Settings'] as const;
+const CANARY_POINTS = canaryPoints();
+const CANARY_BREACH = breachIndex(CANARY_POINTS);
+
+const NAV: readonly Section[] = ['Deployments', 'Analytics', 'Logs', 'Settings'];
 const FAIL_STEP = 3;
 const NEW_VERSION = 2;
 const BROKEN_VERSION = 3;
@@ -65,6 +97,8 @@ function StatusDot({ status }: { status: Deployment['status'] }) {
   );
 }
 
+const CHAPTERS = [0, 6800, 12000, 14200] as const;
+
 export function DeployDemo() {
   const { t } = useI18n();
   const copy = t.deploy;
@@ -76,8 +110,11 @@ export function DeployDemo() {
   const [deploys, setDeploys] = useState<DeployState>(() => initialState(copy.history));
   const [run, setRun] = useState<Run | null>(null);
   const [story, setStory] = useState<Story>('idle');
+  const [section, setSection] = useState<Section>('Deployments');
+  const [logQuery, setLogQuery] = useState('');
   const [succeeded, setSucceeded] = useState(false);
   const [triedBroken, setTriedBroken] = useState(false);
+  const [canary, setCanary] = useState<Run | null>(null);
 
   const latest: Commit = {
     sha: t.outstaff.pr.commits[1]?.sha ?? 'e3f9a12',
@@ -111,12 +148,25 @@ export function DeployDemo() {
   const started = new Set(visible.filter((event) => event.kind === 'start').map((e) => e.step));
   const elapsed = visible.at(-1)?.at ?? 0;
 
-  const start = (later: Schedule, commit: Commit, version: number) => {
+  const start = (
+    later: Schedule,
+    commit: Commit,
+    version: number,
+    target: DeployTarget = 'production',
+  ) => {
     sequence.current += 1;
     const id = `dpl_${sequence.current}`;
-    const events = timelineOf({ ...commit, id, status: 'building', version, fresh: true });
+    const events = timelineOf({
+      ...commit,
+      id,
+      status: 'building',
+      version,
+      fresh: true,
+      target,
+    });
     const ok = version !== BROKEN_VERSION;
-    setDeploys((state) => begin(state, commit, version, sequence.current));
+    setSection('Deployments');
+    setDeploys((state) => begin(state, commit, version, sequence.current, target));
     setRun({ id, shown: 0 });
     setStory('building');
     events.forEach((event, index) => {
@@ -125,16 +175,38 @@ export function DeployDemo() {
     later(
       () => {
         setDeploys((state) => settle(state, id, ok));
-        setStory(ok ? 'ready' : 'failed');
+        setStory(ok ? (target === 'preview' ? 'preview' : 'ready') : 'failed');
         if (ok) setSucceeded(true);
       },
       reduceMotion ? 0 : (events.at(-1)?.at ?? 0) + 150,
     );
   };
 
-  const { schedule, interrupt, touched } = useAutoplay(rootRef, (later) => {
-    later(() => start(later, latest, NEW_VERSION), 500);
-  });
+  const reset = () => {
+    sequence.current = 0;
+    setDeploys(initialState(copy.history));
+    setRun(null);
+    setStory('idle');
+    setSucceeded(false);
+    setTriedBroken(false);
+    setSection('Deployments');
+    setLogQuery('');
+    setCanary(null);
+  };
+
+  const { schedule, interrupt, touched, player } = useAutoplay(
+    rootRef,
+    (later) => {
+      const [, broken = 0, restoreAt = 0, canaryAt = 0] = CHAPTERS;
+      later(() => undefined, 600, { target: '[data-guide="redeploy"]', press: true });
+      later(() => undefined, broken, { target: '[data-guide="broken"]', press: true });
+      later(() => undefined, restoreAt, { target: '[data-guide="rollback"]', press: true });
+      later(() => undefined, canaryAt, { target: '[data-guide="canary"]', press: true });
+    },
+    { reset, chapters: CHAPTERS },
+  );
+
+  useDemoCommands('deploy', player);
 
   const redeploy = () => {
     interrupt();
@@ -145,6 +217,44 @@ export function DeployDemo() {
     interrupt();
     setTriedBroken(true);
     start(schedule, copy.broken, BROKEN_VERSION);
+  };
+
+  const releaseCanary = () => {
+    interrupt();
+    sequence.current += 1;
+    const id = `dpl_${sequence.current}`;
+    setSection('Deployments');
+    setDeploys((state) =>
+      begin(state, copy.canary.commit, CANARY_VERSION, sequence.current, 'canary'),
+    );
+    setCanary({ id, shown: reduceMotion ? CANARY_POINTS.length : 1 });
+    setStory('canary');
+    CANARY_POINTS.forEach((point, index) => {
+      schedule(() => setCanary({ id, shown: index + 1 }), reduceMotion ? 0 : point.at);
+    });
+    schedule(
+      () => {
+        setDeploys((state) => settle(state, id, false));
+        setStory('canaryRollback');
+      },
+      reduceMotion ? 0 : (CANARY_POINTS[CANARY_BREACH]?.at ?? 0) + 200,
+    );
+  };
+
+  const previewBranch = () => {
+    interrupt();
+    start(
+      schedule,
+      { sha: copy.preview.sha, message: copy.preview.message },
+      PREVIEW_VERSION,
+      'preview',
+    );
+  };
+
+  const promoteDeployment = (id: string) => {
+    interrupt();
+    setDeploys((state) => promote(state, id));
+    setStory('promoted');
   };
 
   const restore = (id: string) => {
@@ -170,16 +280,24 @@ export function DeployDemo() {
       : (copy.history.find((item) => item.sha === deployment.sha)?.age ?? '');
 
   const headlineOf = (version: number) =>
-    version < copy.history.length
-      ? (copy.history[version]?.headline ?? t.build.demo.headline)
-      : t.build.demo.headline;
+    version === PREVIEW_VERSION
+      ? copy.preview.headline
+      : version < copy.history.length
+        ? (copy.history[version]?.headline ?? t.build.demo.headline)
+        : t.build.demo.headline;
 
   const caption =
-    story === 'ready'
-      ? fillTemplate(copy.plain.ready, { s: seconds(totalDuration()) })
-      : story === 'rollback' || story === 'selected'
-        ? fillTemplate(copy.plain[story], { message: selected?.message ?? '' })
-        : copy.plain[story];
+    section === 'Logs'
+      ? copy.plainExtra.logs
+      : story === 'canary' || story === 'canaryRollback'
+        ? copy.canary.plain[story]
+        : story === 'preview' || story === 'promoted'
+          ? copy.plainExtra[story]
+          : story === 'ready'
+            ? fillTemplate(copy.plain.ready, { s: seconds(totalDuration()) })
+            : story === 'rollback' || story === 'selected'
+              ? fillTemplate(copy.plain[story], { message: selected?.message ?? '' })
+              : copy.plain[story];
 
   const firstRollback = deploys.deployments.find(
     (item) => item.status === 'ready' && item.id !== deploys.production,
@@ -194,224 +312,321 @@ export function DeployDemo() {
       callouts={copy.callouts}
       caption={caption}
       glossary={copy.glossary}
+      player={<DemoPlayer player={player} labels={copy.chapters} />}
     >
-      <div ref={rootRef} className="flex flex-col gap-4 lg:relative lg:block lg:min-h-[40rem]">
-        <div className="lg:w-[64%]">
-          <Window title={copy.window}>
-            <div className="flex h-11 items-center gap-5 overflow-x-auto border-b border-win-line px-4 text-[0.8125rem]">
-              <span className="flex shrink-0 items-center gap-2 font-medium text-win-text">
-                <span
-                  aria-hidden="true"
-                  className="size-4 rounded bg-gradient-to-br from-[#8a4b2a] to-[#c9875a]"
-                />
-                zerno-coffee
-              </span>
-              {NAV.map((item) => (
-                <span
-                  key={item}
-                  className={`hidden shrink-0 sm:inline ${item === 'Deployments' ? 'text-win-text' : 'text-win-muted'}`}
-                >
-                  {item}
+      <div ref={rootRef} className="relative flex flex-col gap-4 lg:block lg:h-full">
+        <GuideCursor cursor={player.cursor} name={t.ui.player.guide} />
+        <DesktopWindow id="deployments" title={copy.window} className="lg:h-full lg:w-[64%]">
+          <Window title={copy.window} className="h-full">
+            <div className="flex h-full flex-col">
+              <div className="flex h-11 shrink-0 items-center gap-5 overflow-x-auto border-b border-win-line px-4 text-[0.8125rem]">
+                <span className="flex shrink-0 items-center gap-2 font-medium text-win-text">
+                  <span
+                    aria-hidden="true"
+                    className="size-4 rounded bg-gradient-to-br from-[#8a4b2a] to-[#c9875a]"
+                  />
+                  zerno-coffee
                 </span>
-              ))}
-            </div>
-
-            <div className="relative flex flex-wrap items-center gap-x-4 gap-y-3 border-b border-win-line px-4 py-4">
-              <Callout n={1} className="-top-2 left-3" />
-              <Avatar name="syntaxis-dev" />
-              <div className="min-w-[11rem] flex-1">
-                <p className="truncate text-[0.875rem] font-medium">{latest.message}</p>
-                <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[0.6875rem] text-win-muted">
-                  <span className="inline-flex items-center gap-1">
-                    <GitBranch aria-hidden="true" className="size-3" /> main
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <GitCommitHorizontal aria-hidden="true" className="size-3" /> {latest.sha}
-                  </span>
-                </p>
-              </div>
-              <span className="relative">
-                <button
-                  type="button"
-                  onClick={breakIt}
-                  disabled={building}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-win-line px-3 py-1.5 text-[0.75rem] font-medium text-win-text hover:border-bad/60 hover:text-bad disabled:cursor-wait disabled:opacity-60"
-                >
-                  <Bug aria-hidden="true" className="size-3.5" />
-                  {copy.actions.broken}
-                </button>
-                <Hotspot
-                  label={copy.hints[1] ?? ''}
-                  visible={touched && succeeded && !triedBroken && !building}
-                  className="top-full left-1/2 mt-3"
-                  side="left"
-                />
-              </span>
-              <span className="relative">
-                <button
-                  type="button"
-                  onClick={redeploy}
-                  disabled={building}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-win-text px-3 py-1.5 text-[0.75rem] font-semibold text-win disabled:cursor-wait disabled:opacity-60"
-                >
-                  <RotateCw aria-hidden="true" className="size-3.5" />
-                  {copy.actions.redeploy}
-                </button>
-                <Hotspot
-                  label={copy.hints[0] ?? ''}
-                  visible={!touched && !building && succeeded}
-                  className="top-full left-1/2 mt-3"
-                  side="left"
-                />
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-[17rem_minmax(0,1fr)]">
-              <div className="border-b border-win-line md:border-r md:border-b-0">
-                <p className="px-4 pt-3 pb-1.5 text-[0.6875rem] font-semibold text-win-muted">
-                  {copy.list}
-                </p>
-                <ul className="pb-2">
-                  {deploys.deployments.map((deployment) => {
-                    const live = deployment.id === deploys.production;
-                    const active = deployment.id === deploys.selected;
-                    const canRestore = deployment.status === 'ready' && !live && !building;
-                    return (
-                      <li
-                        key={deployment.id}
-                        className={`log-line relative flex items-center gap-2 px-2 ${active ? 'bg-win-raised' : ''}`}
-                      >
-                        <button
-                          type="button"
-                          aria-pressed={active}
-                          onClick={() => inspect(deployment.id)}
-                          className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-left hover:bg-win-raised"
-                        >
-                          <StatusDot status={deployment.status} />
-                          <span className="min-w-0 flex-1">
-                            <span className="line-clamp-2 block text-[0.8125rem] leading-snug text-win-text">
-                              {deployment.message}
-                            </span>
-                            <span className="flex items-center gap-2 font-mono text-[0.6875rem] text-win-muted">
-                              {deployment.sha}
-                              <span className="font-sans">{ageOf(deployment)}</span>
-                            </span>
-                          </span>
-                          {live ? (
-                            <span className="shrink-0 rounded-full bg-ok/15 px-2 py-0.5 text-[0.625rem] font-semibold text-ok">
-                              {copy.live}
-                            </span>
-                          ) : null}
-                        </button>
-                        {canRestore ? (
-                          <button
-                            type="button"
-                            onClick={() => restore(deployment.id)}
-                            title={copy.instant}
-                            className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md border border-win-line px-2 py-1 text-[0.6875rem] text-win-text hover:border-win-accent hover:text-win-accent"
-                          >
-                            <RotateCcw aria-hidden="true" className="size-3" />
-                            {copy.actions.rollback}
-                          </button>
-                        ) : null}
-                        {deployment.id === firstRollback ? (
-                          <Hotspot
-                            label={copy.hints[2] ?? ''}
-                            visible={story === 'failed'}
-                            className="top-1/2 right-24 -mt-1.5"
-                            side="left"
-                          />
-                        ) : null}
-                      </li>
-                    );
-                  })}
-                </ul>
+                <span role="tablist" aria-label="Project" className="flex gap-1">
+                  {NAV.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      role="tab"
+                      aria-selected={section === item}
+                      onClick={() => {
+                        interrupt();
+                        setSection(item);
+                      }}
+                      className={`shrink-0 cursor-pointer rounded-md px-2 py-1 transition-colors ${section === item ? 'bg-win-raised text-win-text' : 'text-win-muted hover:text-win-text'}`}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </span>
               </div>
 
-              <div className="flex min-w-0 flex-col">
-                <ol className="relative flex flex-wrap gap-1 border-b border-win-line p-3">
-                  <Callout n={2} className="top-2 right-2" />
-                  {copy.steps.map((step, index) => {
-                    const done = finished.has(index);
-                    const failed = failedStep === index;
-                    const current = started.has(index) && !done && !failed;
-                    return (
-                      <li
-                        key={step}
-                        aria-current={current ? 'step' : undefined}
-                        className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-[0.75rem] ${failed ? 'bg-bad/10 text-bad' : current ? 'bg-win-raised text-win-text' : done ? 'text-win-text' : 'text-win-muted'}`}
-                      >
-                        {failed ? (
-                          <CircleX aria-hidden="true" className="size-3.5" />
-                        ) : done ? (
-                          <Check aria-hidden="true" className="size-3.5 text-ok" />
-                        ) : current ? (
-                          <LoaderCircle
-                            aria-hidden="true"
-                            className="size-3.5 animate-[spin_0.8s_linear_infinite] text-warn"
-                          />
-                        ) : (
-                          <Circle aria-hidden="true" className="size-3.5" />
-                        )}
-                        {step}
-                      </li>
-                    );
-                  })}
-                </ol>
-                <div
-                  ref={logRef}
-                  aria-live="off"
-                  className="h-[19rem] overflow-y-auto py-3 font-mono text-[0.75rem] leading-[1.7]"
-                >
-                  {visible.map((event, index) =>
-                    event.kind === 'start' ? (
-                      <p
-                        key={index}
-                        className="log-line mt-2 px-4 font-semibold text-win-text first:mt-0"
-                      >
-                        ▾ {event.text}
-                      </p>
-                    ) : event.kind === 'line' ? (
-                      <p key={index} className="log-line flex gap-3 px-4 whitespace-pre">
-                        <span className="w-12 shrink-0 text-right text-win-muted/80">
-                          {seconds(event.at)}s
-                        </span>
-                        <span
-                          className={
-                            event.text.startsWith('$')
-                              ? 'text-win-accent'
-                              : event.text.startsWith('FAIL') || event.text.includes('failed')
-                                ? 'text-bad'
-                                : 'text-win-text/85'
-                          }
-                        >
-                          {event.text}
-                        </span>
-                      </p>
-                    ) : null,
-                  )}
-                  {selected?.status === 'ready' ? (
-                    <p className="log-line mt-2 px-4 text-ok">
-                      ✓ Deployment completed in {seconds(elapsed)}s
-                    </p>
-                  ) : selected?.status === 'error' ? (
-                    <p className="log-line mt-2 px-4 font-sans text-bad">✕ {copy.broken.failed}</p>
-                  ) : null}
+              <div className="relative flex shrink-0 flex-wrap items-center gap-x-4 gap-y-3 border-b border-win-line px-4 py-4">
+                <Callout n={1} className="-top-2 left-3" />
+                <Avatar name="syntaxis-dev" />
+                <div className="min-w-[11rem] flex-1">
+                  <p className="truncate text-[0.875rem] font-medium">{latest.message}</p>
+                  <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[0.6875rem] text-win-muted">
+                    <span className="inline-flex items-center gap-1">
+                      <GitBranch aria-hidden="true" className="size-3" /> main
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <GitCommitHorizontal aria-hidden="true" className="size-3" /> {latest.sha}
+                    </span>
+                  </p>
                 </div>
+                <button
+                  type="button"
+                  data-guide="canary"
+                  onClick={releaseCanary}
+                  disabled={building}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-win-line px-3 py-1.5 text-[0.75rem] font-medium text-win-text hover:border-win-accent/60 hover:text-win-accent disabled:cursor-wait disabled:opacity-60"
+                >
+                  <Gauge aria-hidden="true" className="size-3.5" />
+                  {copy.canary.button}
+                </button>
+                <button
+                  type="button"
+                  data-guide="preview"
+                  onClick={previewBranch}
+                  disabled={building}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-win-line px-3 py-1.5 text-[0.75rem] font-medium text-win-text hover:border-win-accent/60 hover:text-win-accent disabled:cursor-wait disabled:opacity-60"
+                >
+                  <GitBranch aria-hidden="true" className="size-3.5" />
+                  {copy.preview.button}
+                </button>
+                <span className="relative">
+                  <button
+                    type="button"
+                    data-guide="broken"
+                    onClick={breakIt}
+                    disabled={building}
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-win-line px-3 py-1.5 text-[0.75rem] font-medium text-win-text hover:border-bad/60 hover:text-bad disabled:cursor-wait disabled:opacity-60"
+                  >
+                    <Bug aria-hidden="true" className="size-3.5" />
+                    {copy.actions.broken}
+                  </button>
+                  <Hotspot
+                    label={copy.hints[1] ?? ''}
+                    visible={touched && succeeded && !triedBroken && !building}
+                    className="top-full left-1/2 mt-3"
+                    side="left"
+                  />
+                </span>
+                <span className="relative">
+                  <button
+                    type="button"
+                    data-guide="redeploy"
+                    onClick={redeploy}
+                    disabled={building}
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-win-text px-3 py-1.5 text-[0.75rem] font-semibold text-win disabled:cursor-wait disabled:opacity-60"
+                  >
+                    <RotateCw aria-hidden="true" className="size-3.5" />
+                    {copy.actions.redeploy}
+                  </button>
+                  <Hotspot
+                    label={copy.hints[0] ?? ''}
+                    visible={!touched && !building && succeeded}
+                    className="top-full left-1/2 mt-3"
+                    side="left"
+                  />
+                </span>
               </div>
+
+              {section !== 'Deployments' ? (
+                <div className="scroll-area lg:min-h-0 lg:flex-1">
+                  <Insights section={section} />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-[17rem_minmax(0,1fr)] lg:min-h-0 lg:flex-1 lg:grid-rows-[minmax(0,1fr)]">
+                  <div className="flex flex-col border-b border-win-line md:border-r md:border-b-0 lg:min-h-0">
+                    <p className="px-4 pt-3 pb-1.5 text-[0.6875rem] font-semibold text-win-muted">
+                      {copy.list}
+                    </p>
+                    <ul className="scroll-area pb-2 lg:min-h-0 lg:flex-1">
+                      {deploys.deployments.map((deployment) => {
+                        const live = deployment.id === deploys.production;
+                        const active = deployment.id === deploys.selected;
+                        const canRestore = deployment.status === 'ready' && !live && !building;
+                        return (
+                          <li
+                            key={deployment.id}
+                            className={`log-line relative flex items-center gap-2 px-2 ${active ? 'bg-win-raised' : ''}`}
+                          >
+                            <button
+                              type="button"
+                              aria-pressed={active}
+                              onClick={() => inspect(deployment.id)}
+                              className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-left hover:bg-win-raised"
+                            >
+                              <StatusDot status={deployment.status} />
+                              <span className="min-w-0 flex-1">
+                                <span className="line-clamp-2 block text-[0.8125rem] leading-snug text-win-text">
+                                  {deployment.message}
+                                </span>
+                                <span className="flex items-center gap-2 font-mono text-[0.6875rem] text-win-muted">
+                                  {deployment.sha}
+                                  <span className="font-sans">{ageOf(deployment)}</span>
+                                </span>
+                              </span>
+                              {deployment.target === 'canary' ? (
+                                <span className="shrink-0 rounded-full bg-warn/15 px-2 py-0.5 text-[0.625rem] font-semibold text-warn">
+                                  {copy.canary.badge}
+                                </span>
+                              ) : null}
+                              {deployment.target === 'preview' && !live ? (
+                                <span className="shrink-0 rounded-full bg-win-accent/15 px-2 py-0.5 text-[0.625rem] font-semibold text-win-accent">
+                                  {copy.preview.badge}
+                                </span>
+                              ) : null}
+                              {live ? (
+                                <span className="shrink-0 rounded-full bg-ok/15 px-2 py-0.5 text-[0.625rem] font-semibold text-ok">
+                                  {copy.live}
+                                </span>
+                              ) : null}
+                            </button>
+                            {canRestore && deployment.target === 'preview' ? (
+                              <button
+                                type="button"
+                                data-guide="promote"
+                                onClick={() => promoteDeployment(deployment.id)}
+                                className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md bg-win-accent px-2 py-1 text-[0.6875rem] font-medium text-win hover:opacity-90"
+                              >
+                                <ArrowUpRight aria-hidden="true" className="size-3" />
+                                {copy.preview.promote}
+                              </button>
+                            ) : null}
+                            {canRestore && deployment.target === 'production' ? (
+                              <button
+                                type="button"
+                                data-guide="rollback"
+                                onClick={() => restore(deployment.id)}
+                                title={copy.instant}
+                                className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md border border-win-line px-2 py-1 text-[0.6875rem] text-win-text hover:border-win-accent hover:text-win-accent"
+                              >
+                                <RotateCcw aria-hidden="true" className="size-3" />
+                                {copy.actions.rollback}
+                              </button>
+                            ) : null}
+                            {deployment.id === firstRollback ? (
+                              <Hotspot
+                                label={copy.hints[2] ?? ''}
+                                visible={story === 'failed'}
+                                className="top-1/2 right-24 -mt-1.5"
+                                side="left"
+                              />
+                            ) : null}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+
+                  <div className="flex min-w-0 flex-col lg:min-h-0 lg:overflow-y-auto">
+                    {selected?.target === 'canary' ? (
+                      <CanaryPanel
+                        copy={copy.canary}
+                        points={CANARY_POINTS}
+                        shown={canary?.id === selected.id ? canary.shown : CANARY_POINTS.length}
+                        total={CANARY_POINTS.length}
+                      />
+                    ) : (
+                      <>
+                        <ol className="relative flex flex-wrap gap-1 border-b border-win-line p-3">
+                          <Callout n={2} className="top-2 right-2" />
+                          {copy.steps.map((step, index) => {
+                            const done = finished.has(index);
+                            const failed = failedStep === index;
+                            const current = started.has(index) && !done && !failed;
+                            return (
+                              <li
+                                key={step}
+                                aria-current={current ? 'step' : undefined}
+                                className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-[0.75rem] ${failed ? 'bg-bad/10 text-bad' : current ? 'bg-win-raised text-win-text' : done ? 'text-win-text' : 'text-win-muted'}`}
+                              >
+                                {failed ? (
+                                  <CircleX aria-hidden="true" className="size-3.5" />
+                                ) : done ? (
+                                  <Check aria-hidden="true" className="size-3.5 text-ok" />
+                                ) : current ? (
+                                  <LoaderCircle
+                                    aria-hidden="true"
+                                    className="size-3.5 animate-[spin_0.8s_linear_infinite] text-warn"
+                                  />
+                                ) : (
+                                  <Circle aria-hidden="true" className="size-3.5" />
+                                )}
+                                {step}
+                              </li>
+                            );
+                          })}
+                        </ol>
+                        <label className="flex items-center gap-2 border-b border-win-line px-4 py-1.5 text-[0.75rem] text-win-muted focus-within:text-win-text">
+                          <Search aria-hidden="true" className="size-3.5" />
+                          <input
+                            value={logQuery}
+                            aria-label="Filter build logs"
+                            placeholder="Filter build logs"
+                            onChange={(event) => setLogQuery(event.target.value)}
+                            className="min-w-0 flex-1 bg-transparent font-mono text-win-text outline-none placeholder:font-sans placeholder:text-win-muted"
+                          />
+                        </label>
+                        <div
+                          ref={logRef}
+                          aria-live="off"
+                          className="scroll-area h-[19rem] py-3 font-mono lg:h-auto lg:min-h-[8rem] lg:flex-1 text-[0.75rem] leading-[1.7]"
+                        >
+                          {visible
+                            .filter(
+                              (event) =>
+                                logQuery === '' ||
+                                event.kind !== 'line' ||
+                                event.text.toLowerCase().includes(logQuery.toLowerCase()),
+                            )
+                            .map((event, index) =>
+                              event.kind === 'start' ? (
+                                <p
+                                  key={index}
+                                  className="log-line mt-2 px-4 font-semibold text-win-text first:mt-0"
+                                >
+                                  ▾ {event.text}
+                                </p>
+                              ) : event.kind === 'line' ? (
+                                <p key={index} className="log-line flex gap-3 px-4 whitespace-pre">
+                                  <span className="w-12 shrink-0 text-right text-win-muted">
+                                    {seconds(event.at)}s
+                                  </span>
+                                  <span
+                                    className={
+                                      event.text.startsWith('$')
+                                        ? 'text-win-accent'
+                                        : event.text.startsWith('FAIL') ||
+                                            event.text.includes('failed')
+                                          ? 'text-bad'
+                                          : 'text-win-text/85'
+                                    }
+                                  >
+                                    {event.text}
+                                  </span>
+                                </p>
+                              ) : null,
+                            )}
+                          {selected?.status === 'ready' ? (
+                            <p className="log-line mt-2 px-4 text-ok">
+                              ✓ Deployment completed in {seconds(elapsed)}s
+                            </p>
+                          ) : selected?.status === 'error' ? (
+                            <p className="log-line mt-2 px-4 font-sans text-bad">
+                              ✕ {copy.broken.failed}
+                            </p>
+                          ) : null}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </Window>
-        </div>
+        </DesktopWindow>
 
-        <div className="lg:absolute lg:right-0 lg:bottom-0 lg:z-10 lg:w-[38%]">
+        <DesktopWindow
+          id="preview"
+          title="zerno.preview.example"
+          className="lg:absolute lg:right-0 lg:bottom-0 lg:w-[38%]"
+        >
           <div data-tone="light" className="window relative overflow-hidden">
             <Callout n={3} className="top-12 right-3" />
-            <div className="flex h-9 items-center gap-2 border-b border-win-line bg-win-raised px-3 text-[0.6875rem] text-win-muted">
-              <span aria-hidden="true" className="flex gap-1">
-                <span className="size-2 rounded-full bg-[#ff5f57]" />
-                <span className="size-2 rounded-full bg-[#febc2e]" />
-                <span className="size-2 rounded-full bg-[#28c840]" />
-              </span>
+            <div
+              data-drag-handle
+              className="flex h-9 items-center gap-2 border-b border-win-line bg-win-raised px-3 text-[0.6875rem] text-win-muted"
+            >
+              <TrafficLights size="sm" />
               <span className="mx-auto flex items-center gap-1.5 rounded-full bg-win px-3 py-0.5">
                 <Lock aria-hidden="true" className="size-2.5" />
                 zerno.preview.example
@@ -443,7 +658,7 @@ export function DeployDemo() {
               </span>
             </div>
           </div>
-        </div>
+        </DesktopWindow>
       </div>
     </Showcase>
   );

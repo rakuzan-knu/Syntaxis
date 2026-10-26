@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { className, cssFor } from '../model/css';
+import { subscriptionSvg } from '../model/svg';
 import {
   createDoc,
   linkFrom,
@@ -69,6 +70,9 @@ describe('css export', () => {
       '  border-radius: 20px;',
       '  padding: 10px 16px;',
       "  font: 500 14px 'Geologica', sans-serif;",
+      '  &:hover { filter: brightness(1.08); }',
+      '  &:active { scale: 0.98; filter: brightness(0.9); }',
+      '  &:disabled { opacity: 0.45; }',
       '}',
     ]);
   });
@@ -76,5 +80,29 @@ describe('css export', () => {
   it('builds safe class names', () => {
     expect(className('Кнопка')).toBe('.layer');
     expect(className('Input / Email')).toBe('.input-email');
+  });
+});
+
+describe('svg export', () => {
+  const texts = {
+    title: 'Coffee <club>',
+    badge: 'New',
+    text: 'Fresh roast every month. Cancel at any time.',
+    primary: 'Subscribe',
+    secondary: 'Details',
+  };
+
+  it('uses the frame width, accent and escaped texts', () => {
+    const doc = updateNode(createDoc('#2F3BFF'), 'card', { width: 320 });
+    const svg = subscriptionSvg(doc, texts);
+    expect(svg).toContain('width="320"');
+    expect(svg).toContain('fill="#2F3BFF"');
+    expect(svg).toContain('Coffee &lt;club&gt;');
+    expect(svg.startsWith('<svg')).toBe(true);
+  });
+
+  it('prefers edited layer text', () => {
+    const doc = updateNode(createDoc('#2F3BFF'), 'primary', { text: 'Buy now' });
+    expect(subscriptionSvg(doc, texts)).toContain('>Buy now<');
   });
 });

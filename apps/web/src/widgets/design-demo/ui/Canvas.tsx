@@ -4,20 +4,29 @@ import type { Dictionary } from '@/shared/i18n';
 import { useDismiss } from '@/shared/lib';
 import { FRAME_WIDTH, ZOOM_PRESETS, clampZoom } from '../model/document';
 
-export type Tool = 'move' | 'hand';
+export type Tool = 'move' | 'hand' | 'comment';
 
 interface CanvasProps {
   copy: Dictionary['design']['figma'];
   tool: Tool;
   label: string;
-  cursor: { x: number; y: number } | null;
   onBackground: () => void;
+  onPlace: (x: number, y: number) => void;
+  overlay: (scale: number) => ReactNode;
   children: ReactNode;
 }
 
 const PADDING = 48;
 
-export function Canvas({ copy, tool, label, cursor, onBackground, children }: CanvasProps) {
+export function Canvas({
+  copy,
+  tool,
+  label,
+  onBackground,
+  onPlace,
+  overlay,
+  children,
+}: CanvasProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -29,6 +38,7 @@ export function Canvas({ copy, tool, label, cursor, onBackground, children }: Ca
   const [dragging, setDragging] = useState(false);
   const [menu, setMenu] = useState(false);
   const [height, setHeight] = useState(0);
+  const [width, setWidth] = useState(FRAME_WIDTH);
 
   useDismiss(menuRef, menu, () => setMenu(false));
 
@@ -41,6 +51,7 @@ export function Canvas({ copy, tool, label, cursor, onBackground, children }: Ca
       const tall = (viewport.clientHeight - PADDING * 1.5) / frame.offsetHeight;
       setFit(Math.min(1, width, tall));
       setHeight(frame.offsetHeight);
+      setWidth(frame.offsetWidth);
     });
     observer.observe(viewport);
     observer.observe(frame);
@@ -88,7 +99,7 @@ export function Canvas({ copy, tool, label, cursor, onBackground, children }: Ca
         if (event.key === ' ') setSpace(false);
       }}
       onClick={onBackground}
-      className="relative h-[27rem] touch-none overflow-hidden bg-[#f3f4f6] bg-[radial-gradient(circle,#d6d9e0_1px,transparent_1px)] bg-[length:16px_16px] outline-none sm:h-[30rem]"
+      className="relative h-[27rem] touch-none overflow-hidden bg-[#f3f4f6] bg-[radial-gradient(circle,#d6d9e0_1px,transparent_1px)] bg-[length:16px_16px] outline-none sm:h-[30rem] lg:h-auto lg:min-h-0 lg:flex-1"
       style={{ backgroundPosition: `${pan.x}px ${pan.y}px` }}
     >
       <div
@@ -104,28 +115,33 @@ export function Canvas({ copy, tool, label, cursor, onBackground, children }: Ca
         >
           {label}
         </span>
-        <div ref={frameRef}>{children}</div>
+        <div ref={frameRef} className="relative">
+          {children}
+          {overlay(scale)}
+        </div>
         <span
           className="absolute left-1/2 -translate-x-1/2 rounded bg-[#2f3bff] px-1.5 py-0.5 font-mono whitespace-nowrap text-white"
           style={{ top: `calc(100% + ${10 / scale}px)`, fontSize: `${0.625 / scale}rem` }}
         >
-          {FRAME_WIDTH} × {Math.round(height)}
+          {Math.round(width)} × {Math.round(height)}
         </span>
-        {cursor ? (
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute z-10 transition-[left,top] duration-700 ease-[var(--ease-out)]"
-            style={{ left: `${cursor.x}%`, top: `${cursor.y}%`, scale: `${1 / scale}` }}
-          >
-            <svg viewBox="0 0 16 16" className="size-4 drop-shadow">
-              <path d="M1 1l5 14 2-6 6-2z" fill="#E5484D" stroke="white" strokeWidth="1.2" />
-            </svg>
-            <span className="absolute top-4 left-3 rounded-full bg-[#E5484D] px-2 py-0.5 text-[0.6875rem] font-medium whitespace-nowrap text-white">
-              {copy.collaborator}
-            </span>
-          </span>
-        ) : null}
       </div>
+
+      {tool === 'comment' && !panning ? (
+        <div
+          aria-hidden="true"
+          onClick={(event) => {
+            event.stopPropagation();
+            const rect = frameRef.current?.getBoundingClientRect();
+            if (!rect) return;
+            const x = ((event.clientX - rect.left) / rect.width) * 100;
+            const y = ((event.clientY - rect.top) / rect.height) * 100;
+            if (x < 0 || x > 100 || y < 0 || y > 100) return;
+            onPlace(x, y);
+          }}
+          className="absolute inset-0 z-[15] cursor-crosshair"
+        />
+      ) : null}
 
       {panning ? (
         <div

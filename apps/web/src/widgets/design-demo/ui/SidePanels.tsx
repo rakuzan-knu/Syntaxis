@@ -1,4 +1,4 @@
-import { ArrowRight, Check, Copy, MousePointerClick, Play } from 'lucide-react';
+import { ArrowRight, Check, Copy, Download, MousePointerClick, Play } from 'lucide-react';
 import type { Dictionary } from '@/shared/i18n';
 import { useCopyToClipboard } from '@/shared/lib';
 import { CodeBlock } from '@/shared/ui';
@@ -12,6 +12,7 @@ interface SidePanelsProps {
   selected: string | null;
   onSelect: (id: string, page: PageId) => void;
   onPresent: () => void;
+  onExport: (() => void) | null;
 }
 
 export default function SidePanels({
@@ -21,6 +22,7 @@ export default function SidePanels({
   selected,
   onSelect,
   onPresent,
+  onExport,
 }: SidePanelsProps) {
   const { copied, copy: copyText } = useCopyToClipboard();
 
@@ -28,6 +30,16 @@ export default function SidePanels({
     const lines = selected ? cssFor(doc, selected) : [];
     return (
       <div className="px-4 py-3.5">
+        {onExport ? (
+          <button
+            type="button"
+            onClick={onExport}
+            className="mb-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-win-line px-3 py-2 text-[0.75rem] font-medium text-win-text hover:bg-win-raised"
+          >
+            <Download aria-hidden="true" className="size-3.5" />
+            {copy.exportSvg}
+          </button>
+        ) : null}
         {lines.length === 0 ? (
           <p className="text-[0.75rem] text-win-muted">{copy.inspectEmpty}</p>
         ) : (

@@ -51,6 +51,7 @@ interface StoreButtonProps {
   type?: 'button' | 'submit';
   disabled?: boolean;
   className?: string;
+  guide?: string | undefined;
 }
 
 export function StoreButton({
@@ -61,10 +62,12 @@ export function StoreButton({
   type = 'button',
   disabled = false,
   className = '',
+  guide,
 }: StoreButtonProps) {
   return (
     <button
       type={type}
+      data-guide={guide}
       onClick={onClick}
       disabled={disabled}
       className={`inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-full font-medium transition-[background-color,color,opacity] duration-300 disabled:cursor-wait disabled:opacity-70 ${variant === 'solid' ? 'px-4 py-2 text-[0.8125rem] text-white hover:opacity-90' : 'border px-2.5 py-1 text-[0.6875rem] hover:bg-black/5'} ${className}`}

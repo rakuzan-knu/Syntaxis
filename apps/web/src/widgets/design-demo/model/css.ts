@@ -1,4 +1,4 @@
-import { nameOf, nodeById, styleOf, type DesignDoc } from './document';
+import { FRAME_WIDTH, nameOf, nodeById, styleOf, type DesignDoc } from './document';
 
 const PADDING = { compact: 18, comfortable: 24 } as const;
 const SHADOW = {
@@ -36,16 +36,18 @@ export function cssFor(doc: DesignDoc, id: string): string[] {
   switch (node.kind) {
     case 'frame':
       body.push(
+        `width: ${style.width ?? FRAME_WIDTH}px;`,
         `padding: ${paddingPx(style.padding)}px;`,
         `border-radius: ${style.radius ?? 0}px;`,
         `box-shadow: ${shadowCss(style.shadow)};`,
-        'background: #FFFFFF;',
+        'background: var(--surface-background);',
+        'color: var(--text-primary);',
       );
       break;
     case 'text':
       body.push(
         `font: ${style.weight ?? 400} ${style.size ?? 14}px/1.3 ${fontCss(doc.font)};`,
-        'color: #14161C;',
+        `color: var(${node.id === 'text' ? '--text-secondary' : '--text-primary'});`,
       );
       break;
     case 'button':
@@ -54,6 +56,9 @@ export function cssFor(doc: DesignDoc, id: string): string[] {
         `border-radius: ${style.radius ?? 0}px;`,
         'padding: 10px 16px;',
         `font: 500 14px ${fontCss(doc.font)};`,
+        '&:hover { filter: brightness(1.08); }',
+        '&:active { scale: 0.98; filter: brightness(0.9); }',
+        '&:disabled { opacity: 0.45; }',
       );
       break;
     case 'badge':

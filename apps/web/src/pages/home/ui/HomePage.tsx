@@ -1,3 +1,4 @@
+import { CommandPalette } from '@/features/command-palette';
 import { Closing } from '@/widgets/closing';
 import { Faq } from '@/widgets/faq';
 import { Hero } from '@/widgets/hero';
@@ -44,6 +45,7 @@ export function HomePage() {
         <Closing />
       </main>
       <SiteFooter />
+      <CommandPalette />
     </>
   );
 }

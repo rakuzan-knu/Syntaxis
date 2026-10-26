@@ -21,7 +21,7 @@ export default function PresentMode({ copy, doc, start, onClose }: PresentModePr
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    closeRef.current?.focus();
+    closeRef.current?.focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
@@ -46,6 +46,7 @@ export default function PresentMode({ copy, doc, start, onClose }: PresentModePr
           type="button"
           onClick={onClose}
           aria-label={copy.figma.exitPresent}
+          data-guide="close-present"
           title={copy.figma.exitPresent}
           className="grid size-8 cursor-pointer place-items-center rounded-md text-white/70 hover:bg-white/10 hover:text-white"
         >

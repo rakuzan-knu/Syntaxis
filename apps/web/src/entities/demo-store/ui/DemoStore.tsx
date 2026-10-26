@@ -87,6 +87,7 @@ export function DemoStore({
         </nav>
         <button
           type="button"
+          data-guide="cart"
           onClick={() => onNavigate('/cart')}
           aria-label={`${copy.cartLabel}: ${count}`}
           className="relative -m-1.5 grid size-8 cursor-pointer place-items-center rounded-full hover:bg-black/5"
@@ -170,6 +171,7 @@ function StoreHome({
                 <StoreButton
                   accent={accent}
                   variant="outline"
+                  guide={index === 0 ? 'add-to-cart' : undefined}
                   onClick={() => setCart(addToCart(cart, defaultLine(product.sku)))}
                 >
                   {copy.addToCart}

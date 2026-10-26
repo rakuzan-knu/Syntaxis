@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -7,6 +7,7 @@ import {
   Globe,
   Lock,
   Monitor,
+  PanelBottom,
   Plus,
   RotateCw,
   Search,
@@ -14,9 +15,15 @@ import {
   WifiOff,
   X,
 } from 'lucide-react';
-import { DemoStore, STORE_HOST, parseStorePath, type CartLine } from '@/entities/demo-store';
+import {
+  Consultant,
+  DemoStore,
+  STORE_HOST,
+  parseStorePath,
+  type CartLine,
+} from '@/entities/demo-store';
 import type { Dictionary } from '@/shared/i18n';
-import { Callout, ScoreRing } from '@/shared/ui';
+import { Callout, ScoreRing, TrafficLights } from '@/shared/ui';
 import {
   NEW_TAB,
   back,
@@ -32,6 +39,7 @@ import {
   type BrowserHistory,
   type Location,
 } from '../model/browserHistory';
+import { DevTools, type ConsoleEntry } from './DevTools';
 
 export type Device = 'desktop' | 'mobile';
 export type Audit = 'idle' | 'running' | 'done';
@@ -39,6 +47,7 @@ export type Audit = 'idle' | 'running' | 'done';
 const SCORES = [98, 100, 100, 100] as const;
 const MAX_TABS = 4;
 const SHORTCUTS = ['/', '/catalog', '/cart'] as const;
+const CHECKOUT_PAGES: ReadonlySet<string> = new Set(['checkout', 'order']);
 
 interface Tab {
   id: number;
@@ -55,6 +64,7 @@ interface BrowserWindowProps {
   onDevice: (device: Device) => void;
   onAudit: () => void;
   onInteract: () => void;
+  schedule: (callback: () => void, delay: number) => void;
 }
 
 function titleOf(location: Location, copy: Dictionary['build']): string {
@@ -93,6 +103,7 @@ export function BrowserWindow({
   onDevice,
   onAudit,
   onInteract,
+  schedule,
 }: BrowserWindowProps) {
   const [tabs, setTabs] = useState<readonly Tab[]>(() => [
     { id: 1, history: createHistory(storeUrl('/')) },
@@ -101,14 +112,26 @@ export function BrowserWindow({
   const [cart, setCart] = useState<CartLine[]>([]);
   const [draft, setDraft] = useState<string | null>(null);
   const [visit, setVisit] = useState(0);
+  const [devtools, setDevtools] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [entries, setEntries] = useState<readonly ConsoleEntry[]>([]);
   const nextId = useRef(2);
+  const entryId = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const addressRef = useRef<HTMLInputElement>(null);
 
   const active = tabs.find((tab) => tab.id === activeId) ?? tabs[0];
   const history = active?.history ?? createHistory(NEW_TAB);
   const url = currentUrl(history);
   const location = locate(url);
+  const storePage =
+    location.kind === 'store'
+      ? parseStorePath(
+          location.path,
+          copy.demo.products.map((product) => product.sku),
+        ).page
+      : null;
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
@@ -130,7 +153,49 @@ export function BrowserWindow({
     setVisit((value) => value + 1);
   };
 
-  const go = (target: string) => update((current) => push(current, target));
+  const log = (level: ConsoleEntry['level'], text: string) => {
+    entryId.current += 1;
+    const id = entryId.current;
+    setEntries((current) => [...current, { id, level, text }].slice(-60));
+  };
+
+  const report = (target: string) => {
+    const next = locate(target);
+    if (next.kind === 'external') {
+      log('error', `GET https://${next.host}/ net::ERR_NAME_NOT_RESOLVED`);
+      return;
+    }
+    if (next.kind === 'newtab') return;
+    const route = parseStorePath(
+      next.path,
+      copy.demo.products.map((product) => product.sku),
+    );
+    if (route.page === 'notFound') {
+      log('warning', `GET https://${STORE_HOST}${next.path} 404 (Not Found)`);
+      return;
+    }
+    if (route.page === 'order') {
+      log('info', `[analytics] purchase {"order":"${route.id}"}`);
+      return;
+    }
+    log('info', `[router] ${next.path}`);
+  };
+
+  const go = (target: string) => {
+    report(target);
+    update((current) => push(current, target));
+  };
+
+  const toggleDevtools = () => {
+    onInteract();
+    setDevtools((value) => !value);
+  };
+
+  const onBrowserKey = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'F12') return;
+    event.preventDefault();
+    toggleDevtools();
+  };
   const storeNavigate = (path: string) => go(storeUrl(path));
 
   const openTab = (target = NEW_TAB) => {
@@ -173,13 +238,12 @@ export function BrowserWindow({
       role="group"
       aria-label={copy.demo.brand}
       data-tone="light"
+      onKeyDown={onBrowserKey}
       className="window flex h-full flex-col overflow-hidden"
     >
-      <div className="flex h-10 shrink-0 items-end gap-1 bg-win-raised px-3">
-        <span aria-hidden="true" className="mr-2 mb-3.5 flex shrink-0 gap-1.5">
-          <span className="size-2.5 rounded-full bg-[#ff5f57]" />
-          <span className="size-2.5 rounded-full bg-[#febc2e]" />
-          <span className="size-2.5 rounded-full bg-[#28c840]" />
+      <div data-drag-handle className="flex h-10 shrink-0 items-end gap-1 bg-win-raised px-3">
+        <span className="mr-2 mb-3.5">
+          <TrafficLights />
         </span>
         <div role="group" aria-label={copy.browser.tabs} className="flex min-w-0 items-end gap-0.5">
           {tabs.map((tab) => {
@@ -314,7 +378,18 @@ export function BrowserWindow({
           ))}
           <button
             type="button"
+            onClick={toggleDevtools}
+            aria-pressed={devtools}
+            aria-label="DevTools (F12)"
+            title="DevTools (F12)"
+            className={`grid size-7 cursor-pointer place-items-center rounded-md ${devtools ? 'bg-win-raised text-win-text' : 'text-win-muted hover:text-win-text'}`}
+          >
+            <PanelBottom aria-hidden="true" className="size-4" />
+          </button>
+          <button
+            type="button"
             onClick={onAudit}
+            data-guide="audit"
             disabled={audit === 'running'}
             aria-label={copy.runAudit}
             title={copy.runAudit}
@@ -336,8 +411,16 @@ export function BrowserWindow({
         ) : null}
       </div>
 
-      <div className="relative min-h-0 flex-1 overflow-hidden bg-[#e9e6e1]">
-        <Callout n={3} className="right-3 bottom-3" />
+      <div ref={stageRef} className="relative min-h-0 flex-1 overflow-hidden bg-[#e9e6e1]">
+        {devtools ? (
+          <DevTools
+            target={scrollRef}
+            stage={stageRef}
+            entries={entries}
+            onClose={() => setDevtools(false)}
+          />
+        ) : null}
+        <Callout n={3} className="bottom-3 left-3" />
         <div
           ref={scrollRef}
           className={`absolute inset-y-0 left-1/2 -translate-x-1/2 overflow-y-auto bg-[#f7f4ef] transition-[width,box-shadow] duration-500 ease-[var(--ease-out)] ${device === 'mobile' ? 'w-[min(100%,22rem)] shadow-[0_0_0_1px_rgb(0_0_0/0.1)]' : 'w-full'}`}
@@ -351,10 +434,12 @@ export function BrowserWindow({
               accent={accent}
               path={location.path}
               cart={cart}
-              guide
+              guide={!chatOpen}
               onNavigate={storeNavigate}
               onCart={(next) => {
                 onInteract();
+                const count = next.reduce((sum, line) => sum + line.quantity, 0);
+                log('info', `[cart] ${count} item${count === 1 ? '' : 's'}`);
                 setCart(next);
               }}
             />
@@ -405,6 +490,29 @@ export function BrowserWindow({
             </div>
           )}
         </div>
+        {location.kind === 'store' ? (
+          <div
+            className={`pointer-events-none absolute inset-y-3 left-1/2 z-[35] ${storePage !== null && CHECKOUT_PAGES.has(storePage) ? 'hidden' : 'flex'} -translate-x-1/2 flex-col justify-end px-3 transition-[width] duration-500 ease-[var(--ease-out)] ${device === 'mobile' ? 'w-[min(100%,22rem)]' : 'w-full'}`}
+          >
+            <Consultant
+              copy={copy.demo}
+              accent={accent}
+              cart={cart}
+              schedule={schedule}
+              onCart={(next) => {
+                onInteract();
+                log('info', `[cart] ${next.reduce((sum, line) => sum + line.quantity, 0)} items`);
+                setCart(next);
+              }}
+              onNavigate={(path) => {
+                onInteract();
+                storeNavigate(path);
+              }}
+              onEvent={(text) => log('info', text)}
+              onOpenChange={setChatOpen}
+            />
+          </div>
+        ) : null}
       </div>
 
       <div

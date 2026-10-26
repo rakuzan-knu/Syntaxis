@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getDictionary } from '@/shared/i18n/server';
-import { composeBrief, defaultSelection, toggleFocus } from '../model/composeBrief';
+import { composeBrief, defaultSelection, estimateWeeks, toggleFocus } from '../model/composeBrief';
 
 describe('composeBrief', () => {
   it('builds a Ukrainian message from the default selection', () => {
@@ -31,5 +31,24 @@ describe('composeBrief', () => {
     const copy = getDictionary('uk').brief;
     const selection = toggleFocus(toggleFocus(defaultSelection(copy), 'speed'), 'speed');
     expect(selection.focuses).toEqual(['design', 'seo']);
+  });
+});
+
+describe('estimateWeeks', () => {
+  const base = { project: 'store', focuses: ['design', 'seo'], timeline: 'months', budget: 'open' };
+
+  it('gives a range per project type', () => {
+    expect(estimateWeeks(base)).toEqual({ min: 5, max: 8 });
+  });
+
+  it('adds time for every extra focus', () => {
+    expect(estimateWeeks({ ...base, focuses: ['design', 'seo', 'speed', 'security'] })).toEqual({
+      min: 5,
+      max: 9,
+    });
+  });
+
+  it('has no estimate for hiring a developer', () => {
+    expect(estimateWeeks({ ...base, project: 'developer' })).toBeNull();
   });
 });

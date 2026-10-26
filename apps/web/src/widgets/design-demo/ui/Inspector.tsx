@@ -2,6 +2,10 @@ import { useId, type ReactNode } from 'react';
 import type { Dictionary } from '@/shared/i18n';
 import {
   ACCENTS,
+  FRAME_WIDTH,
+  MAX_FRAME_WIDTH,
+  MIN_FRAME_WIDTH,
+  type ButtonState,
   defaultText,
   nodeById,
   styleOf,
@@ -11,6 +15,7 @@ import {
   type Padding,
   type Shadow,
 } from '../model/document';
+import { MODES, VARIABLES, valueOf, type ThemeMode } from '../model/variables';
 
 interface InspectorProps {
   copy: Dictionary['design'];
@@ -19,6 +24,7 @@ interface InspectorProps {
   onNode: (id: string, patch: NodeStyle, key?: string) => void;
   onAccent: (accent: string) => void;
   onFont: (font: Font) => void;
+  onMode: (mode: ThemeMode) => void;
 }
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
@@ -83,6 +89,7 @@ function Slider({
         id={id}
         aria-label={label}
         type="range"
+        data-guide="slider"
         min={min}
         max={max}
         value={value}
@@ -109,6 +116,7 @@ function Swatches({ value, onChange }: { value: string; onChange: (value: string
             type="button"
             aria-pressed={value.toLowerCase() === accent.toLowerCase()}
             aria-label={accent}
+            data-guide={`swatch-${accent.toLowerCase()}`}
             onClick={() => onChange(accent)}
             className={`size-7 cursor-pointer rounded-md ring-offset-2 ring-offset-win transition-shadow ${value.toLowerCase() === accent.toLowerCase() ? 'ring-2 ring-win-accent' : ''}`}
             style={{ backgroundColor: accent }}
@@ -118,6 +126,76 @@ function Swatches({ value, onChange }: { value: string; onChange: (value: string
       <p className="mt-2 font-mono text-[0.6875rem] text-win-muted">{value.toUpperCase()} · 100%</p>
     </>
   );
+}
+
+function Variables({
+  copy,
+  mode,
+  onMode,
+}: {
+  copy: Dictionary['design']['figma']['variables'];
+  mode: ThemeMode;
+  onMode: (mode: ThemeMode) => void;
+}) {
+  return (
+    <Row label={copy.title}>
+      <div
+        role="radiogroup"
+        aria-label={copy.mode}
+        className="grid grid-cols-2 rounded-md bg-win-raised p-0.5"
+      >
+        {MODES.map((value) => (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={mode === value}
+            data-guide={`mode-${value}`}
+            onClick={() => onMode(value)}
+            className={`cursor-pointer rounded px-1.5 py-1 text-[0.75rem] ${mode === value ? 'bg-win text-win-text shadow-sm' : 'text-win-muted hover:text-win-text'}`}
+          >
+            {copy[value]}
+          </button>
+        ))}
+      </div>
+      <table className="mt-3 w-full text-[0.6875rem]">
+        <thead>
+          <tr className="text-win-muted">
+            <th className="pb-1.5 text-left font-normal">{copy.name}</th>
+            {MODES.map((value) => (
+              <th
+                key={value}
+                className={`w-14 pb-1.5 text-left font-normal ${mode === value ? 'text-win-text' : ''}`}
+              >
+                {copy[value]}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {VARIABLES.map((variable) => (
+            <tr key={variable.token}>
+              <td className="truncate py-1 pr-2 font-mono text-win-text">{variable.name}</td>
+              {MODES.map((value) => (
+                <td key={value} className="py-1">
+                  <span
+                    title={valueOf(variable, value)}
+                    className={`block size-4 rounded border ${mode === value ? 'border-win-accent ring-1 ring-win-accent' : 'border-win-line'}`}
+                    style={{ backgroundColor: valueOf(variable, value) }}
+                  />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-2 text-[0.6875rem] text-win-muted">{copy.note}</p>
+    </Row>
+  );
+}
+
+function isButtonState(value: string): value is ButtonState {
+  return ['default', 'hover', 'pressed', 'disabled'].includes(value);
 }
 
 function isPadding(value: string): value is Padding {
@@ -132,7 +210,15 @@ function isFont(value: string): value is Font {
   return value === 'sans' || value === 'mono';
 }
 
-export function Inspector({ copy, doc, selected, onNode, onAccent, onFont }: InspectorProps) {
+export function Inspector({
+  copy,
+  doc,
+  selected,
+  onNode,
+  onAccent,
+  onFont,
+  onMode,
+}: InspectorProps) {
   const labels = copy.figma.props;
   const node = selected ? nodeById(selected) : undefined;
   const style = node ? styleOf(doc, node.id) : {};
@@ -156,6 +242,7 @@ export function Inspector({ copy, doc, selected, onNode, onAccent, onFont }: Ins
         <Row label={copy.controls.font}>
           <Choice label={copy.controls.font} value={doc.font} options={fonts} onChange={onFont} />
         </Row>
+        <Variables copy={copy.figma.variables} mode={doc.mode} onMode={onMode} />
       </>
     );
   }
@@ -178,6 +265,15 @@ export function Inspector({ copy, doc, selected, onNode, onAccent, onFont }: Ins
     <>
       {node.kind === 'frame' ? (
         <>
+          <Row label={labels.width}>
+            <Slider
+              label={labels.width}
+              value={style.width ?? FRAME_WIDTH}
+              min={MIN_FRAME_WIDTH}
+              max={MAX_FRAME_WIDTH}
+              onChange={(value) => onNode(id, { width: value }, `${id}:width`)}
+            />
+          </Row>
           <Row label={labels.radius}>
             <Slider
               label={labels.radius}
@@ -203,6 +299,7 @@ export function Inspector({ copy, doc, selected, onNode, onAccent, onFont }: Ins
               onChange={(value) => onNode(id, { shadow: value })}
             />
           </Row>
+          <Variables copy={copy.figma.variables} mode={doc.mode} onMode={onMode} />
         </>
       ) : null}
       {textRow}
@@ -233,6 +330,28 @@ export function Inspector({ copy, doc, selected, onNode, onAccent, onFont }: Ins
             value={style.color ?? doc.accent}
             onChange={(value) => onNode(id, { color: value })}
           />
+        </Row>
+      ) : null}
+      {node.kind === 'button' ? (
+        <Row label={labels.state}>
+          <div className="grid grid-cols-2 gap-1">
+            {copy.figma.states.map((option) => {
+              const current = style.state ?? 'default';
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={current === option.value}
+                  onClick={() => {
+                    if (isButtonState(option.value)) onNode(id, { state: option.value });
+                  }}
+                  className={`cursor-pointer rounded-md px-2 py-1 text-[0.75rem] ${current === option.value ? 'bg-win-accent text-white' : 'bg-win-raised text-win-muted hover:text-win-text'}`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
         </Row>
       ) : null}
       {node.kind === 'button' ? (

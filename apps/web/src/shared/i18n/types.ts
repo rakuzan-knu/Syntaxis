@@ -43,8 +43,23 @@ export interface SectionCopy {
   benefit: string;
   hints: readonly string[];
   callouts: readonly string[];
+  chapters: readonly string[];
   glossary: readonly GlossaryItem[];
 }
+
+export interface ConsultantWords {
+  bright: string;
+  balanced: string;
+  bold: string;
+  sweet: string;
+  espresso: string;
+  filter: string;
+  turkish: string;
+  milk: string;
+  budget: string;
+}
+
+export type ConsultantSignals = { readonly [Key in keyof ConsultantWords]: readonly string[] };
 
 export interface DemoProduct {
   sku: string;
@@ -101,6 +116,49 @@ export interface Dictionary {
     benefitLabel: string;
     plainLabel: string;
     glossaryLabel: string;
+    palette: {
+      open: string;
+      title: string;
+      placeholder: string;
+      empty: string;
+      groups: { go: string; demo: string; other: string };
+      sections: {
+        hero: string;
+        design: string;
+        api: string;
+        deploy: string;
+        security: string;
+        performance: string;
+        outstaff: string;
+      };
+      replay: string;
+      language: string;
+      telegram: string;
+      shortcuts: string;
+      hints: { move: string; run: string; close: string };
+    };
+    shortcuts: {
+      title: string;
+      close: string;
+      items: readonly { keys: readonly string[]; text: string }[];
+    };
+    windows: {
+      close: string;
+      minimize: string;
+      zoom: string;
+      restoreAll: string;
+      restore: string;
+      reset: string;
+      dock: string;
+    };
+    player: {
+      label: string;
+      play: string;
+      pause: string;
+      replay: string;
+      yours: string;
+      guide: string;
+    };
   };
   hero: {
     title: string;
@@ -111,12 +169,15 @@ export interface Dictionary {
   };
   build: {
     window: string;
+    chapters: readonly string[];
     hints: readonly string[];
     callouts: readonly string[];
     tabs: { code: string; preview: string; audit: string };
     devices: { desktop: string; mobile: string };
     accentLabel: string;
     accentNames: readonly string[];
+    suggestions: readonly string[];
+    acceptSuggestion: string;
     demoBadge: string;
     runAudit: string;
     auditing: string;
@@ -165,6 +226,30 @@ export interface Dictionary {
       };
       order: { title: string; text: string; number: string; again: string };
       notFound: { title: string; text: string; home: string };
+      consultant: {
+        open: string;
+        title: string;
+        status: string;
+        greeting: string;
+        placeholder: string;
+        send: string;
+        close: string;
+        typing: string;
+        starters: readonly string[];
+        askTaste: string;
+        tasteChips: readonly string[];
+        askBrew: string;
+        brewChips: readonly string[];
+        recommend: string;
+        recommendAny: string;
+        reasons: ConsultantWords;
+        brews: { espresso: string; filter: string; turkish: string; milk: string };
+        add: string;
+        added: string;
+        toCart: string;
+        note: string;
+        signals: ConsultantSignals;
+      };
       guide: { add: string; open: string; checkout: string; place: string };
     };
     browser: {
@@ -213,6 +298,7 @@ export interface Dictionary {
         zoomOut: string;
         zoom: string;
         fit: string;
+        comment: string;
       };
       show: string;
       hide: string;
@@ -223,6 +309,14 @@ export interface Dictionary {
       presentHint: string;
       copy: string;
       copied: string;
+      variables: {
+        title: string;
+        mode: string;
+        name: string;
+        light: string;
+        dark: string;
+        note: string;
+      };
       props: {
         page: string;
         text: string;
@@ -233,7 +327,12 @@ export interface Dictionary {
         padding: string;
         shadow: string;
         accentNote: string;
+        width: string;
+        state: string;
       };
+      states: readonly Choice[];
+      exportSvg: string;
+      comments: { placeholder: string; send: string; reply: string; author: string; you: string };
       weights: readonly Choice[];
       shadows: readonly Choice[];
       flow: { title: string; trigger: string; navigate: string; animation: string; empty: string };
@@ -262,6 +361,15 @@ export interface Dictionary {
     idle: string;
     product: string;
     scenarioLabel: string;
+    integrations: {
+      tab: string;
+      lead: string;
+      names: { crm: string; shipping: string; telegram: string; email: string };
+      delivered: string;
+      waiting: string;
+      retry: string;
+      crmDown: string;
+    };
     scenarios: { ok: string; outOfStock: string; declined: string };
     environments: { production: string; staging: string };
     customer: {
@@ -275,6 +383,7 @@ export interface Dictionary {
       paid: string;
       notFound: string;
       webhook: string;
+      invalid: string;
     };
     plain: {
       idle: string;
@@ -286,9 +395,25 @@ export interface Dictionary {
       paid: string;
       notFound: string;
       webhook: string;
+      invalid: string;
       staging: string;
     };
     nextHint: string;
+    modes: { form: string; json: string };
+    code: { tab: string; copy: string; copied: string };
+    load: {
+      button: string;
+      title: string;
+      start: string;
+      again: string;
+      close: string;
+      rps: string;
+      p95: string;
+      instances: string;
+      errors: string;
+      requests: string;
+      plain: string;
+    };
   };
   deploy: SectionCopy & {
     run: string;
@@ -313,6 +438,31 @@ export interface Dictionary {
       rollback: string;
       selected: string;
     };
+    preview: {
+      button: string;
+      promote: string;
+      badge: string;
+      branch: string;
+      message: string;
+      sha: string;
+      headline: string;
+    };
+    canary: {
+      button: string;
+      badge: string;
+      title: string;
+      stable: string;
+      next: string;
+      chart: string;
+      threshold: string;
+      elapsed: string;
+      watching: string;
+      rollback: string;
+      result: string;
+      commit: { sha: string; message: string };
+      plain: { canary: string; canaryRollback: string };
+    };
+    plainExtra: { preview: string; promoted: string; logs: string };
   };
   security: SectionCopy & {
     gradeLabel: string;
@@ -339,6 +489,28 @@ export interface Dictionary {
       blocked: string;
     };
     plain: { idle: string; off: string; on: string; blocked: string; succeeded: string };
+    server: { title: string; items: readonly { id: string; name: string; description: string }[] };
+    incidents: {
+      title: string;
+      blocked: string;
+      through: string;
+      empty: string;
+      stoppedBy: string;
+      passed: string;
+      alert: string;
+    };
+    serverAttacks: readonly { id: string; name: string; blocked: string; succeeded: string }[];
+    scenes: {
+      login: string;
+      email: string;
+      attempts: string;
+      locked: string;
+      cracked: string;
+      search: string;
+      noResults: string;
+      leaked: string;
+    };
+    audit: { title: string; fix: string; fixAll: string; clean: string; owasp: string };
   };
   performance: SectionCopy & {
     optimizations: readonly { id: string; label: string; detail: string }[];
@@ -358,6 +530,31 @@ export interface Dictionary {
       conditions: string;
       race: string;
     };
+    views: { report: string; real: string; images: string; budget: string };
+    budget: {
+      title: string;
+      lead: string;
+      needs: { dates: string; utils: string; charts: string };
+      skip: string;
+      pass: string;
+      fail: string;
+      base: string;
+      lcp: string;
+      mergeable: string;
+      blocked: string;
+      fix: string;
+      plain: string;
+    };
+    real: {
+      title: string;
+      note: string;
+      interact: string;
+      waiting: string;
+      waterfall: string;
+      loaded: string;
+      plain: string;
+    };
+    images: { before: string; after: string; hint: string; slider: string; plain: string };
   };
   outstaff: SectionCopy & {
     pr: {
@@ -397,6 +594,27 @@ export interface Dictionary {
       fixed: string;
       approved: string;
       merged: string;
+    };
+    preview: {
+      bot: string;
+      ready: string;
+      updated: string;
+      text: string;
+      url: string;
+      headline: string;
+      open: string;
+      close: string;
+    };
+    report: {
+      tab: string;
+      title: string;
+      total: string;
+      hours: string;
+      days: readonly string[];
+      dayHours: readonly number[];
+      tasks: readonly { title: string; hours: number; status: 'merged' | 'review' | 'progress' }[];
+      statuses: { merged: string; review: string; progress: string };
+      note: string;
     };
   };
   services: {
@@ -448,6 +666,8 @@ export interface Dictionary {
     replyNote: string;
     hints: readonly string[];
     plain: string;
+    estimate: { title: string; weeks: string; note: string; deliverablesTitle: string };
+    deliverables: Readonly<Record<string, readonly string[]>>;
   };
   faq: {
     title: string;

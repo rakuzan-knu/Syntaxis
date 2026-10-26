@@ -291,7 +291,7 @@ export const legalEn: LegalDocuments = {
         id: 'testing',
         title: 'How we check',
         blocks: [
-          'We test with automated tools such as Lighthouse and axe, and manually with a keyboard, at different zoom levels and screen widths. We check again whenever the site changes significantly.',
+          'We test with automated tools such as Lighthouse, and manually with a keyboard, at different zoom levels and screen widths. We check again whenever the site changes significantly.',
         ],
       },
       {

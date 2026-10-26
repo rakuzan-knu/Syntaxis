@@ -1,13 +1,18 @@
-import { createContext, use, useState, type CSSProperties, type ReactNode } from 'react';
+import { createContext, use, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import type { Dictionary } from '@/shared/i18n';
 import { fontCss, paddingPx, shadowCss } from '../model/css';
+import { modeStyle } from '../model/variables';
 import {
   FRAME_WIDTH,
+  NARROW_FRAME,
+  clampWidth,
+  nodeById,
   defaultText,
   isTextNode,
   linkFrom,
   styleOf,
+  type ButtonState,
   type DesignDoc,
   type PageId,
 } from '../model/document';
@@ -26,6 +31,7 @@ export interface FrameProps {
   onEdit?: (id: string | null) => void;
   onText?: (id: string, text: string) => void;
   onNavigate?: (page: PageId) => void;
+  onResize?: (id: string, width: number) => void;
 }
 
 function EditableText({
@@ -106,13 +112,15 @@ function Box({
   style?: CSSProperties;
   children: ReactNode;
 }) {
-  const { doc, mode, selected, editing, flash, onSelect, onEdit, onNavigate } = useFrame();
+  const { doc, mode, selected, editing, flash, onSelect, onEdit, onNavigate, onResize } =
+    useFrame();
   if (doc.hidden.includes(id)) return null;
   const link = linkFrom(id);
 
   if (mode === 'present') {
     return (
       <div
+        data-present={id}
         className={`relative ${link ? 'cursor-pointer' : ''} ${className}`}
         style={style}
         onClick={
@@ -138,6 +146,7 @@ function Box({
   const locked = doc.locked.includes(id);
   const active = selected === id;
   const isEditing = editing === id;
+  const resizable = active && !locked && nodeById(id)?.kind === 'frame' && onResize;
   return (
     <div
       data-node={id}
@@ -156,6 +165,7 @@ function Box({
       style={style}
     >
       {children}
+      {resizable ? <ResizeHandle id={id} onResize={onResize} /> : null}
       {active && !isEditing ? (
         <span aria-hidden="true" className="pointer-events-none absolute inset-0">
           {CORNERS.map((corner) => (
@@ -170,21 +180,68 @@ function Box({
   );
 }
 
+function stateStyle(state: ButtonState | undefined): CSSProperties {
+  if (state === 'hover') return { filter: 'brightness(1.08)' };
+  if (state === 'pressed') return { filter: 'brightness(0.9)', scale: '0.98' };
+  if (state === 'disabled') return { opacity: 0.45 };
+  return {};
+}
+
+function ResizeHandle({
+  id,
+  onResize,
+}: {
+  id: string;
+  onResize: (id: string, width: number) => void;
+}) {
+  const start = useRef<{ x: number; width: number; scale: number } | null>(null);
+  return (
+    <span
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize frame"
+      onClick={(event) => event.stopPropagation()}
+      onPointerDown={(event) => {
+        event.stopPropagation();
+        const frame = event.currentTarget.parentElement;
+        if (!frame) return;
+        event.currentTarget.setPointerCapture(event.pointerId);
+        start.current = {
+          x: event.clientX,
+          width: frame.offsetWidth,
+          scale: frame.getBoundingClientRect().width / frame.offsetWidth || 1,
+        };
+      }}
+      onPointerMove={(event) => {
+        const origin = start.current;
+        if (!origin) return;
+        onResize(id, clampWidth(origin.width + (event.clientX - origin.x) / origin.scale));
+      }}
+      onPointerUp={() => {
+        start.current = null;
+      }}
+      className="absolute top-1/2 -right-[6px] z-10 h-9 w-3 -translate-y-1/2 cursor-ew-resize rounded-full border-2 border-[#2f3bff] bg-white shadow"
+    />
+  );
+}
+
 function frameStyle(doc: DesignDoc, id: string): CSSProperties {
   const style = styleOf(doc, id);
   return {
-    width: FRAME_WIDTH,
+    width: style.width ?? FRAME_WIDTH,
     borderRadius: style.radius ?? 0,
     boxShadow: shadowCss(style.shadow),
     fontFamily: fontCss(doc.font),
     padding: paddingPx(style.padding),
     gap: paddingPx(style.padding) * 0.66,
+    ...modeStyle(doc.mode),
   };
 }
 
 function SubscribeFrame(props: FrameProps) {
   const { doc, copy, mode } = props;
   const [tab, setTab] = useState(0);
+  const narrow = (styleOf(doc, 'card').width ?? FRAME_WIDTH) < NARROW_FRAME;
   const [reminder, setReminder] = useState(true);
   const title = styleOf(doc, 'title');
   const body = styleOf(doc, 'text');
@@ -196,7 +253,7 @@ function SubscribeFrame(props: FrameProps) {
   return (
     <Box
       id="card"
-      className="flex flex-col bg-white text-[#14161c] transition-[border-radius,box-shadow,padding] duration-300"
+      className="flex flex-col bg-[var(--surface-background)] text-[var(--text-primary)] transition-[border-radius,box-shadow,padding,background-color,color] duration-300"
       style={frameStyle(doc, 'card')}
     >
       <div className="flex items-start justify-between gap-3">
@@ -219,7 +276,7 @@ function SubscribeFrame(props: FrameProps) {
       </div>
       <Box id="text">
         <p
-          className="text-black/60"
+          className="text-[var(--text-secondary)]"
           style={{ fontSize: body.size, fontWeight: body.weight, lineHeight: 1.45 }}
         >
           <NodeText id="text" />
@@ -229,7 +286,7 @@ function SubscribeFrame(props: FrameProps) {
         <div
           role="tablist"
           aria-label={copy.kit.title}
-          className="grid grid-cols-2 bg-black/5 p-1"
+          className="grid grid-cols-2 bg-[var(--surface-subtle)] p-1"
           style={{ borderRadius: control }}
         >
           {copy.kit.tabs.map((label, index) => (
@@ -240,7 +297,7 @@ function SubscribeFrame(props: FrameProps) {
               aria-selected={tab === index}
               tabIndex={mode === 'present' ? 0 : -1}
               onClick={() => setTab(index)}
-              className={`cursor-pointer py-1.5 text-[0.8125rem] font-medium transition-colors ${tab === index ? 'bg-white shadow-sm' : 'text-black/60'}`}
+              className={`cursor-pointer py-1.5 text-[0.8125rem] font-medium transition-colors ${tab === index ? 'bg-[var(--surface-raised)] shadow-sm' : 'text-[var(--text-secondary)]'}`}
               style={{ borderRadius: Math.max(control - 3, 0) }}
             >
               {label}
@@ -249,14 +306,14 @@ function SubscribeFrame(props: FrameProps) {
         </div>
       </Box>
       <Box id="email">
-        <label className="block text-[0.75rem] font-medium text-black/70">
+        <label className="block text-[0.75rem] font-medium text-[var(--text-secondary)]">
           {copy.kit.emailLabel}
           <input
             type="email"
             tabIndex={mode === 'present' ? 0 : -1}
             readOnly={mode === 'edit'}
             placeholder={copy.kit.emailPlaceholder}
-            className="mt-1.5 block w-full border border-black/15 bg-white px-3 py-2 text-[0.875rem] outline-none"
+            className="mt-1.5 block w-full border border-[var(--border-default)] bg-[var(--surface-background)] px-3 py-2 text-[0.875rem] outline-none placeholder:text-[var(--text-secondary)]"
             style={{ borderRadius: control }}
           />
         </label>
@@ -274,7 +331,7 @@ function SubscribeFrame(props: FrameProps) {
           <span
             aria-hidden="true"
             className="relative h-5 w-9 shrink-0 rounded-full transition-colors duration-300"
-            style={{ backgroundColor: reminder ? doc.accent : 'rgb(0 0 0 / 0.15)' }}
+            style={{ backgroundColor: reminder ? doc.accent : 'var(--border-default)' }}
           >
             <span
               className={`absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform duration-300 ${reminder ? 'translate-x-4' : ''}`}
@@ -282,18 +339,22 @@ function SubscribeFrame(props: FrameProps) {
           </span>
         </button>
       </Box>
-      <div className="flex gap-2">
+      <div className={narrow ? 'flex flex-col gap-2' : 'flex gap-2'}>
         <Box id="primary" className="flex-1">
           <span
             className="block py-2.5 text-center text-[0.875rem] font-medium text-white transition-[background-color,border-radius] duration-300"
-            style={{ backgroundColor: primary.color ?? doc.accent, borderRadius: primary.radius }}
+            style={{
+              backgroundColor: primary.color ?? doc.accent,
+              borderRadius: primary.radius,
+              ...stateStyle(primary.state),
+            }}
           >
             <NodeText id="primary" />
           </span>
         </Box>
         <Box id="secondary" className="flex-1">
           <span
-            className="block border border-black/15 py-2.5 text-center text-[0.875rem] font-medium"
+            className="block border border-[var(--border-default)] py-2.5 text-center text-[0.875rem] font-medium"
             style={{ borderRadius: primary.radius }}
           >
             {copy.kit.secondary}
@@ -314,11 +375,11 @@ function CheckoutFrame(props: FrameProps) {
   return (
     <Box
       id="checkout"
-      className="flex flex-col bg-white text-[#14161c] transition-[border-radius,box-shadow,padding] duration-300"
+      className="flex flex-col bg-[var(--surface-background)] text-[var(--text-primary)] transition-[border-radius,box-shadow,padding,background-color,color] duration-300"
       style={frameStyle(doc, 'checkout')}
     >
       <Box id="back" className="self-start">
-        <span className="flex items-center gap-1 text-[0.8125rem] text-black/60">
+        <span className="flex items-center gap-1 text-[0.8125rem] text-[var(--text-secondary)]">
           <ArrowLeft aria-hidden="true" className="size-3.5" />
           {labels.back}
         </span>
@@ -333,7 +394,7 @@ function CheckoutFrame(props: FrameProps) {
       </Box>
       <Box id="summary">
         <div
-          className="flex flex-col gap-2 bg-black/[0.035] p-3.5 text-[0.8125rem]"
+          className="flex flex-col gap-2 bg-[var(--surface-subtle)] p-3.5 text-[0.8125rem]"
           style={{ borderRadius: Math.round(radius * 0.6) }}
         >
           <span className="flex items-center gap-3">
@@ -344,10 +405,10 @@ function CheckoutFrame(props: FrameProps) {
             />
             <span className="min-w-0">
               <span className="block truncate font-medium">{labels.plan}</span>
-              <span className="block text-black/55">{labels.delivery}</span>
+              <span className="block text-[var(--text-secondary)]">{labels.delivery}</span>
             </span>
           </span>
-          <span className="flex justify-between border-t border-black/10 pt-2 font-semibold">
+          <span className="flex justify-between border-t border-[var(--border-default)] pt-2 font-semibold">
             {labels.total}
             <span className="tabular-nums">420 ₴</span>
           </span>
@@ -356,7 +417,11 @@ function CheckoutFrame(props: FrameProps) {
       <Box id="pay">
         <span
           className="block py-2.5 text-center text-[0.875rem] font-medium text-white transition-[background-color,border-radius] duration-300"
-          style={{ backgroundColor: pay.color ?? doc.accent, borderRadius: pay.radius }}
+          style={{
+            backgroundColor: pay.color ?? doc.accent,
+            borderRadius: pay.radius,
+            ...stateStyle(pay.state),
+          }}
         >
           <NodeText id="pay" />
         </span>

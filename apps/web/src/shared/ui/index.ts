@@ -1,7 +1,10 @@
 export { ActionLink } from './ActionLink';
 export { Avatar } from './Avatar';
 export { CodeBlock, type CodeLine, type CodeSegment } from './CodeBlock';
+export { DemoPlayer, GuideCursor } from './DemoPlayer';
 export { Desktop } from './Desktop';
+export { DesktopWindow } from './DesktopWindow';
+export { TrafficLights } from './TrafficLights';
 export { Callout, ExplainLegend, ExplainToggle } from './explain';
 export { ExplainContext } from './explainContext';
 export { Glossary, PlainCaption } from './Glossary';

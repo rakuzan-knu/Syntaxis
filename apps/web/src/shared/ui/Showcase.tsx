@@ -16,6 +16,7 @@ interface ShowcaseProps {
   footer?: ReactNode;
   caption?: string;
   glossary?: readonly GlossaryItem[];
+  player?: ReactNode;
 }
 
 export function Showcase({
@@ -28,6 +29,7 @@ export function Showcase({
   footer,
   caption,
   glossary,
+  player,
 }: ShowcaseProps) {
   const { t } = useI18n();
   const [explain, setExplain] = useState(false);
@@ -38,11 +40,14 @@ export function Showcase({
         <Desktop className="scroll-tilt mt-10">{children}</Desktop>
       </ExplainContext>
       {explain ? <ExplainLegend callouts={callouts} /> : null}
-      <ExplainToggle
-        active={explain}
-        onToggle={() => setExplain((value) => !value)}
-        className="mt-5"
-      />
+      <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3">
+        {player ? <div className="w-full min-w-0 sm:w-auto sm:flex-1">{player}</div> : null}
+        <ExplainToggle
+          active={explain}
+          onToggle={() => setExplain((value) => !value)}
+          className="shrink-0"
+        />
+      </div>
       {caption ? <PlainCaption label={t.ui.plainLabel} text={caption} /> : null}
       <p className="mt-6 flex max-w-[52rem] flex-col gap-1 text-step-0 sm:flex-row sm:gap-3">
         <span className="shrink-0 font-semibold text-accent">{t.ui.benefitLabel}</span>

@@ -2,6 +2,7 @@ import { Fragment, useState, type ReactNode } from 'react';
 import { Check, CheckCheck, ChevronDown, Copy, Paperclip, Send, Smile } from 'lucide-react';
 import { useI18n, type Choice } from '@/shared/i18n';
 import {
+  fillTemplate,
   parseTemplate,
   telegramLink,
   useCopyToClipboard,
@@ -11,6 +12,7 @@ import {
 import { Hotspot, LogoMark, Window } from '@/shared/ui';
 import {
   composeBrief,
+  estimateWeeks,
   defaultSelection,
   toggleFocus,
   type BriefSelection,
@@ -65,6 +67,7 @@ export function BriefComposer() {
   const reduceMotion = usePrefersReducedMotion();
   const timers = useTimers();
   const message = composeBrief(selection, copy, locale);
+  const estimate = estimateWeeks(selection);
   const reply = copy.replies[selection.project] ?? '';
 
   const respond = () => {
@@ -135,9 +138,9 @@ export function BriefComposer() {
   const templates = [copy.projectTemplate, copy.focusTemplate, copy.detailsTemplate];
 
   return (
-    <Window title={copy.window} tone="light">
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-        <div className="border-b border-win-line p-6 sm:p-8 lg:border-r lg:border-b-0">
+    <Window title={copy.window} tone="light" className="h-full">
+      <div className="grid grid-cols-1 lg:h-full lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:grid-rows-[minmax(0,1fr)]">
+        <div className="scroll-area border-b border-win-line p-6 sm:p-8 lg:border-r lg:border-b-0">
           <p className="text-[0.75rem] font-semibold text-win-muted">{copy.builderLabel}</p>
           <div className="mt-4 space-y-4 text-step-1 leading-[2]">
             {templates.map((template, step) => (
@@ -163,20 +166,52 @@ export function BriefComposer() {
               </div>
             ))}
           </div>
+          <div className="mt-6 grid gap-3 rounded-xl border border-win-line bg-win-raised/60 p-4 sm:grid-cols-[auto_minmax(0,1fr)]">
+            {estimate ? (
+              <div className="sm:border-r sm:border-win-line sm:pr-5">
+                <p className="text-[0.75rem] font-semibold text-win-muted">{copy.estimate.title}</p>
+                <p
+                  key={`${estimate.min}-${estimate.max}`}
+                  className="ink-in mt-1 text-step-1 font-semibold whitespace-nowrap"
+                >
+                  {fillTemplate(copy.estimate.weeks, {
+                    min: String(estimate.min),
+                    max: String(estimate.max),
+                  })}
+                </p>
+                <p className="mt-1 max-w-[16rem] text-[0.75rem] text-win-muted">
+                  {copy.estimate.note}
+                </p>
+              </div>
+            ) : null}
+            <div className={estimate ? '' : 'sm:col-span-2'}>
+              <p className="text-[0.75rem] font-semibold text-win-muted">
+                {copy.estimate.deliverablesTitle}
+              </p>
+              <ul key={selection.project} className="ink-in mt-2 grid gap-1.5 text-[0.8125rem]">
+                {(copy.deliverables[selection.project] ?? []).map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <Check aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-ok" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
 
-        <div className="flex min-h-[26rem] flex-col">
-          <div className="flex items-center gap-3 border-b border-win-line px-4 py-3">
+        <div className="flex min-h-[26rem] flex-col lg:min-h-0">
+          <div className="flex shrink-0 items-center gap-3 border-b border-win-line px-4 py-3">
             <LogoMark className="size-9" />
             <div className="min-w-0">
               <p className="text-[0.875rem] font-semibold">Syntaxis</p>
               <p className="truncate text-[0.75rem] text-win-muted">{copy.online}</p>
             </div>
           </div>
-          <div className="flex flex-1 flex-col justify-end gap-3 bg-[#dfe7d3] bg-[radial-gradient(circle_at_20%_20%,rgb(255_255_255/0.35)_0,transparent_40%),radial-gradient(circle_at_80%_60%,rgb(255_255_255/0.25)_0,transparent_45%)] p-4">
+          <div className="flex flex-1 flex-col gap-3 bg-[#dfe7d3] [&>:first-child]:mt-auto lg:min-h-0 lg:overflow-y-auto bg-[radial-gradient(circle_at_20%_20%,rgb(255_255_255/0.35)_0,transparent_40%),radial-gradient(circle_at_80%_60%,rgb(255_255_255/0.25)_0,transparent_45%)] p-4">
             <p className="max-w-[85%] self-start rounded-2xl rounded-bl-sm bg-white px-3.5 py-2 text-[0.875rem] text-[#1b1f27] shadow-sm">
               {copy.greeting}
-              <span className="ml-2 align-bottom text-[0.6875rem] text-[#8a919c]">10:24</span>
+              <span className="ml-2 align-bottom text-[0.6875rem] text-[#6b7280]">10:24</span>
             </p>
             <p id="brief-preview-label" className="sr-only">
               {copy.previewLabel}
@@ -214,7 +249,7 @@ export function BriefComposer() {
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2 border-t border-win-line px-3 py-2.5">
+          <div className="flex shrink-0 items-center gap-2 border-t border-win-line px-3 py-2.5">
             <Paperclip aria-hidden="true" className="size-5 shrink-0 text-win-muted" />
             <button
               type="button"
@@ -251,7 +286,7 @@ export function BriefComposer() {
               ) : null}
             </span>
           </div>
-          <p className="px-4 pb-3 text-[0.6875rem] text-win-muted">{copy.hint}</p>
+          <p className="shrink-0 px-4 pb-3 text-[0.6875rem] text-win-muted">{copy.hint}</p>
         </div>
       </div>
     </Window>

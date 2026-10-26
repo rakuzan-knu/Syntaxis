@@ -2,6 +2,7 @@ import { Camera, Gift, Lock, LockOpen, ShieldCheck, Skull, Wifi } from 'lucide-r
 import type { ReactNode } from 'react';
 import type { Dictionary } from '@/shared/i18n';
 import type { AttackId } from '../model/attacks';
+import { TrafficLights } from '@/shared/ui';
 
 interface VictimViewProps {
   copy: Dictionary['security']['victim'];
@@ -10,6 +11,7 @@ interface VictimViewProps {
   run: number;
   brand: string;
   pay: string;
+  scenes: Dictionary['security']['scenes'];
   children?: ReactNode;
 }
 
@@ -28,7 +30,57 @@ function Address({ secure }: { secure: boolean }) {
   );
 }
 
-function Scene({ copy, attack, blocked, brand, pay }: Omit<VictimViewProps, 'run' | 'children'>) {
+function Scene({
+  copy,
+  attack,
+  blocked,
+  brand,
+  pay,
+  scenes,
+}: Omit<VictimViewProps, 'run' | 'children'>) {
+  if (attack === 'bruteforce') {
+    return (
+      <div className="flex flex-col gap-2 p-4 text-[0.75rem]">
+        <p className="font-semibold">{scenes.login}</p>
+        <span className="rounded-md border border-black/15 bg-white px-2 py-1.5">
+          {scenes.email}
+        </span>
+        <span className="rounded-md border border-black/15 bg-white px-2 py-1.5 tracking-widest">
+          ••••••••
+        </span>
+        {blocked ? (
+          <p className="ink-in rounded-lg bg-[#fff4e5] px-3 py-2 text-[#8a4b00]">
+            {scenes.attempts.replace('{n}', '5')} · {scenes.locked}
+          </p>
+        ) : (
+          <p className="ink-in flex items-center gap-2 rounded-lg bg-bad px-3 py-2 font-medium text-white">
+            <Skull aria-hidden="true" className="size-4 shrink-0" />
+            {scenes.cracked.replace('{n}', '1832')}
+          </p>
+        )}
+      </div>
+    );
+  }
+  if (attack === 'sqli') {
+    return (
+      <div className="flex flex-col gap-2 p-4 text-[0.75rem]">
+        <p className="font-semibold">{scenes.search}</p>
+        <span className="rounded-md border border-black/15 bg-white px-2 py-1.5 font-mono">
+          &apos; OR 1=1 --
+        </span>
+        {blocked ? (
+          <p className="ink-in text-black/50">{scenes.noResults}</p>
+        ) : (
+          <div className="ink-in rounded-lg bg-[#1d2027] p-2 font-mono text-[0.6875rem] text-[#ff8f8f]">
+            <p className="mb-1 font-sans font-medium">{scenes.leaked}</p>
+            <p>olena.k••@gmail.com · +380 67 ••• 12 40</p>
+            <p>m.shev••@ukr.net · +380 93 ••• 77 01</p>
+            <p>iryna.b••@gmail.com · +380 50 ••• 03 18</p>
+          </div>
+        )}
+      </div>
+    );
+  }
   if (attack === 'xss') {
     return (
       <div className="flex flex-col gap-2 p-4 text-[0.75rem]">
@@ -110,16 +162,24 @@ function Scene({ copy, attack, blocked, brand, pay }: Omit<VictimViewProps, 'run
   );
 }
 
-export function VictimView({ copy, attack, blocked, run, brand, pay, children }: VictimViewProps) {
+export function VictimView({
+  scenes,
+  copy,
+  attack,
+  blocked,
+  run,
+  brand,
+  pay,
+  children,
+}: VictimViewProps) {
   const secure = attack !== 'downgrade' || blocked;
   return (
     <div data-tone="light" className="window relative overflow-hidden">
-      <div className="flex h-9 items-center gap-2 border-b border-win-line bg-win-raised px-3 text-[0.6875rem] text-win-muted">
-        <span aria-hidden="true" className="flex gap-1">
-          <span className="size-2 rounded-full bg-[#ff5f57]" />
-          <span className="size-2 rounded-full bg-[#febc2e]" />
-          <span className="size-2 rounded-full bg-[#28c840]" />
-        </span>
+      <div
+        data-drag-handle
+        className="flex h-9 items-center gap-2 border-b border-win-line bg-win-raised px-3 text-[0.6875rem] text-win-muted"
+      >
+        <TrafficLights size="sm" />
         {attack === 'clickjack' && !blocked ? (
           <span className="mx-auto rounded-full bg-bad/10 px-3 py-0.5 text-bad">
             https://win-iphone.evil.example
@@ -132,8 +192,18 @@ export function VictimView({ copy, attack, blocked, run, brand, pay, children }:
       <p className="border-b border-win-line px-3 py-1.5 text-[0.6875rem] font-semibold text-win-muted">
         {copy.title}
       </p>
-      <div key={`${attack ?? 'idle'}-${run}`} className="relative h-48 bg-[#f7f4ef] text-[#1d1a17]">
-        <Scene copy={copy} attack={attack} blocked={blocked} brand={brand} pay={pay} />
+      <div
+        key={`${attack ?? 'idle'}-${run}`}
+        className="relative h-48 bg-[#f7f4ef] text-[#1d1a17] lg:h-40"
+      >
+        <Scene
+          copy={copy}
+          attack={attack}
+          blocked={blocked}
+          brand={brand}
+          pay={pay}
+          scenes={scenes}
+        />
         {attack && blocked ? (
           <span className="ink-in absolute right-3 bottom-3 flex items-center gap-1.5 rounded-full bg-ok px-3 py-1 text-[0.6875rem] font-semibold text-white">
             <ShieldCheck aria-hidden="true" className="size-3.5" />

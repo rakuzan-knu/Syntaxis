@@ -1,10 +1,12 @@
 import type { Dictionary } from '@/shared/i18n';
+import type { ThemeMode } from './variables';
 
 export type NodeKind = 'frame' | 'text' | 'button' | 'badge' | 'component';
 export type PageId = 'subscribe' | 'checkout';
 export type Padding = 'compact' | 'comfortable';
 export type Shadow = 'none' | 'soft' | 'strong';
 export type Font = 'sans' | 'mono';
+export type ButtonState = 'default' | 'hover' | 'pressed' | 'disabled';
 
 export interface NodeStyle {
   text?: string;
@@ -14,6 +16,8 @@ export interface NodeStyle {
   radius?: number;
   padding?: Padding;
   shadow?: Shadow;
+  width?: number;
+  state?: ButtonState;
 }
 
 export interface DesignNode {
@@ -124,10 +128,11 @@ export interface DesignDoc {
   hidden: readonly string[];
   locked: readonly string[];
   names: Readonly<Record<string, string>>;
+  mode: ThemeMode;
 }
 
 export function createDoc(accent: string): DesignDoc {
-  return { accent, font: 'sans', nodes: {}, hidden: [], locked: [], names: {} };
+  return { accent, font: 'sans', nodes: {}, hidden: [], locked: [], names: {}, mode: 'light' };
 }
 
 export function nodeById(id: string): DesignNode | undefined {
@@ -174,6 +179,13 @@ export function linkFrom(id: string): PageId | undefined {
 
 export const ACCENTS = ['#2F3BFF', '#C2410C', '#0F8A5F', '#7C3AED'] as const;
 export const FRAME_WIDTH = 384;
+export const MIN_FRAME_WIDTH = 280;
+export const MAX_FRAME_WIDTH = 560;
+export const NARROW_FRAME = 340;
+
+export function clampWidth(value: number): number {
+  return Math.round(Math.min(MAX_FRAME_WIDTH, Math.max(MIN_FRAME_WIDTH, value)));
+}
 export const ZOOM_PRESETS = [0.5, 1, 2] as const;
 
 export function clampZoom(value: number): number {

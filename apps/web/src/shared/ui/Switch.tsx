@@ -5,13 +5,15 @@ interface SwitchProps {
   onChange: (checked: boolean) => void;
   children: ReactNode;
   description?: string;
+  guide?: string;
 }
 
-export function Switch({ checked, onChange, children, description }: SwitchProps) {
+export function Switch({ checked, onChange, children, description, guide }: SwitchProps) {
   return (
     <button
       type="button"
       role="switch"
+      data-guide={guide}
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className="group flex w-full cursor-pointer items-center justify-between gap-4 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-win-raised"

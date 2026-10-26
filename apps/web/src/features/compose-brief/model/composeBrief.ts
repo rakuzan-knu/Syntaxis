@@ -54,3 +54,19 @@ export function toggleFocus(selection: BriefSelection, value: string): BriefSele
     : [...selection.focuses, value];
   return { ...selection, focuses };
 }
+
+const BASE_WEEKS: Readonly<Record<string, readonly [number, number]>> = {
+  landing: [1, 2],
+  corporate: [3, 5],
+  store: [5, 8],
+  app: [8, 14],
+  redesign: [3, 6],
+  audit: [1, 2],
+};
+
+export function estimateWeeks(selection: BriefSelection): { min: number; max: number } | null {
+  const base = BASE_WEEKS[selection.project];
+  if (!base) return null;
+  const extra = Math.max(0, selection.focuses.length - 2) * 0.5;
+  return { min: base[0], max: Math.ceil(base[1] + extra) };
+}
