@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { useTimers } from '@/shared/lib';
 import {
@@ -19,22 +19,33 @@ function labelOf(options: StorePageProps['copy']['grinds'], value: string): stri
   return options.find((option) => option.value === value)?.label ?? value;
 }
 
-function Summary({ copy, cart }: Pick<StorePageProps, 'copy' | 'cart'>) {
+function Summary({
+  copy,
+  cart,
+  action,
+}: Pick<StorePageProps, 'copy' | 'cart'> & { action: ReactNode }) {
   const totals = cartTotals(cart, copy.products);
   const price = (value: number) => formatPrice(value, copy.currency);
   return (
-    <dl className="grid grid-cols-[1fr_auto] gap-y-1.5 text-[0.8125rem]">
-      <dt className="text-black/60">{copy.cart.subtotal}</dt>
-      <dd className="text-right tabular-nums">{price(totals.subtotal)}</dd>
-      <dt className="text-black/60">{copy.cart.delivery}</dt>
-      <dd className="text-right tabular-nums">
-        {totals.delivery === 0 ? copy.cart.free : price(totals.delivery)}
-      </dd>
-      <dt className="mt-1.5 border-t border-black/10 pt-2.5 font-semibold">{copy.cart.total}</dt>
-      <dd className="mt-1.5 border-t border-black/10 pt-2.5 text-right font-semibold tabular-nums">
-        {price(totals.total)}
-      </dd>
-    </dl>
+    <div className="text-[0.8125rem]">
+      <dl className="grid grid-cols-[1fr_auto] gap-y-1">
+        <dt className="text-black/60">{copy.cart.subtotal}</dt>
+        <dd className="text-right tabular-nums">{price(totals.subtotal)}</dd>
+        <dt className="text-black/60">{copy.cart.delivery}</dt>
+        <dd className="text-right tabular-nums">
+          {totals.delivery === 0 ? copy.cart.free : price(totals.delivery)}
+        </dd>
+      </dl>
+      <div className="mt-2.5 border-t border-black/10 pt-2.5 @xs:flex @xs:items-center @xs:gap-3 @2xl:block">
+        <dl className="flex flex-1 items-baseline justify-between gap-2 font-semibold @xs:justify-start @2xl:justify-between">
+          <dt>{copy.cart.total}</dt>
+          <dd className="whitespace-nowrap tabular-nums">{price(totals.total)}</dd>
+        </dl>
+        <div className="relative mt-3 @xs:mt-0 @xs:shrink-0 @2xl:mt-4 [&>button]:w-full @xs:[&>button]:w-auto @2xl:[&>button]:w-full">
+          {action}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -60,15 +71,15 @@ export function CartPage({ copy, accent, cart, hint, navigate, setCart }: StoreP
   }
 
   return (
-    <section className="px-5 py-6 @md:px-8 @md:py-8">
+    <section className="px-5 py-4 @md:px-8 @md:py-8">
       <PageTitle>{copy.cart.title}</PageTitle>
-      <div className="mt-5 grid gap-5 @lg:grid-cols-[minmax(0,1fr)_16rem]">
+      <div className="mt-3 grid grid-cols-1 gap-3 @2xl:mt-5 @2xl:grid-cols-[minmax(0,1fr)_16rem] @2xl:gap-5">
         <ul className="divide-y divide-black/10 rounded-2xl bg-white px-4 shadow-[0_1px_2px_rgb(0_0_0/0.06)]">
           {cart.map((line) => {
             const product = copy.products.find((item) => item.sku === line.sku);
             const key = lineKey(line);
             return (
-              <li key={key} className="flex items-center gap-3 py-3">
+              <li key={key} className="flex items-center gap-3 py-2 @sm:py-2.5">
                 <button
                   type="button"
                   onClick={() => navigate(`/product/${line.sku}`)}
@@ -77,8 +88,8 @@ export function CartPage({ copy, accent, cart, hint, navigate, setCart }: StoreP
                 >
                   <Bean sku={line.sku} className="size-8" />
                 </button>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[0.8125rem] font-medium">
+                <span className="min-w-0 flex-1 leading-snug">
+                  <span className="line-clamp-2 text-[0.8125rem] font-medium break-words">
                     {product?.name}
                   </span>
                   <span className="block truncate text-[0.6875rem] text-black/60">
@@ -91,15 +102,21 @@ export function CartPage({ copy, accent, cart, hint, navigate, setCart }: StoreP
                 <span
                   role="group"
                   aria-label={copy.cart.quantity}
-                  className="flex items-center rounded-full border border-black/15"
+                  className="flex shrink-0 items-center rounded-full border border-black/15"
                 >
                   <button
                     type="button"
-                    aria-label="−1"
+                    aria-label={line.quantity === 1 ? copy.cart.remove : '−1'}
                     onClick={() => setCart(setQuantity(cart, key, line.quantity - 1))}
                     className="grid size-7 cursor-pointer place-items-center rounded-full hover:bg-black/5"
                   >
-                    <Minus aria-hidden="true" className="size-3" />
+                    <Minus
+                      aria-hidden="true"
+                      className={`size-3 ${line.quantity === 1 ? 'hidden @sm:block' : ''}`}
+                    />
+                    {line.quantity === 1 ? (
+                      <Trash2 aria-hidden="true" className="size-3 @sm:hidden" />
+                    ) : null}
                   </button>
                   <span className="w-5 text-center text-[0.75rem] tabular-nums" aria-live="polite">
                     {line.quantity}
@@ -122,7 +139,7 @@ export function CartPage({ copy, accent, cart, hint, navigate, setCart }: StoreP
                   aria-label={`${copy.cart.remove}: ${product?.name ?? ''}`}
                   title={copy.cart.remove}
                   onClick={() => setCart(setQuantity(cart, key, 0))}
-                  className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-full text-black/40 hover:bg-black/5 hover:text-black"
+                  className="hidden size-7 shrink-0 cursor-pointer place-items-center rounded-full text-black/40 hover:bg-black/5 hover:text-black @sm:grid"
                 >
                   <Trash2 aria-hidden="true" className="size-3.5" />
                 </button>
@@ -131,20 +148,27 @@ export function CartPage({ copy, accent, cart, hint, navigate, setCart }: StoreP
           })}
         </ul>
         <div className="self-start rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgb(0_0_0/0.06)]">
-          <p className="text-[0.6875rem] text-black/60">{copy.cart.freeFrom}</p>
-          <span className="mt-1.5 mb-4 block h-1 overflow-hidden rounded-full bg-black/10">
-            <span
-              className="block h-full rounded-full transition-[width] duration-500"
-              style={{ width: `${progress * 100}%`, backgroundColor: accent }}
-            />
-          </span>
-          <Summary copy={copy} cart={cart} />
-          <span className="relative mt-4 block">
-            <StoreButton accent={accent} onClick={() => navigate('/checkout')} className="w-full">
-              {copy.cart.checkout}
-            </StoreButton>
-            <Guide label={hint} side="top" className="-top-1 left-1/2" />
-          </span>
+          <div className="mb-2.5 flex items-center gap-3 @2xl:mb-4 @2xl:flex-col @2xl:items-stretch @2xl:gap-1.5">
+            <p className="shrink-0 text-[0.6875rem] text-black/60">{copy.cart.freeFrom}</p>
+            <span className="block h-1 flex-1 overflow-hidden rounded-full bg-black/10 @2xl:flex-none">
+              <span
+                className="block h-full rounded-full transition-[width] duration-500"
+                style={{ width: `${progress * 100}%`, backgroundColor: accent }}
+              />
+            </span>
+          </div>
+          <Summary
+            copy={copy}
+            cart={cart}
+            action={
+              <>
+                <StoreButton accent={accent} onClick={() => navigate('/checkout')}>
+                  {copy.cart.checkout}
+                </StoreButton>
+                <Guide label={hint} side="top" className="-top-1.5 -right-1.5" />
+              </>
+            }
+          />
         </div>
       </div>
     </section>
@@ -196,7 +220,7 @@ export function CheckoutPage({ copy, accent, cart, hint, navigate, setCart }: St
       <form
         noValidate
         onSubmit={submit}
-        className="mt-5 grid gap-5 @lg:grid-cols-[minmax(0,1fr)_16rem]"
+        className="mt-5 grid grid-cols-1 gap-5 @2xl:grid-cols-[minmax(0,1fr)_16rem]"
       >
         <div className="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgb(0_0_0/0.06)]">
           <label className="block text-[0.75rem] text-black/60">
@@ -255,13 +279,18 @@ export function CheckoutPage({ copy, accent, cart, hint, navigate, setCart }: St
         </div>
         <div className="self-start rounded-2xl bg-white p-4 shadow-[0_1px_2px_rgb(0_0_0/0.06)]">
           <p className="mb-3 text-[0.8125rem] font-medium">{copy.checkout.summary}</p>
-          <Summary copy={copy} cart={cart} />
-          <span className="relative mt-4 block">
-            <StoreButton accent={accent} type="submit" disabled={placing} className="w-full">
-              {placing ? copy.checkout.placing : copy.checkout.place}
-            </StoreButton>
-            <Guide label={placing ? null : hint} side="top" className="-top-1 left-1/2" />
-          </span>
+          <Summary
+            copy={copy}
+            cart={cart}
+            action={
+              <>
+                <StoreButton accent={accent} type="submit" disabled={placing}>
+                  {placing ? copy.checkout.placing : copy.checkout.place}
+                </StoreButton>
+                <Guide label={placing ? null : hint} side="top" className="-top-1.5 -right-1.5" />
+              </>
+            }
+          />
         </div>
       </form>
     </section>

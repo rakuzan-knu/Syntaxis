@@ -33,23 +33,17 @@ export function Showcase({
   const [explain, setExplain] = useState(false);
 
   return (
-    <Section
-      id={id}
-      title={title}
-      lead={lead}
-      aside={
-        <ExplainToggle
-          active={explain}
-          onToggle={() => setExplain((value) => !value)}
-          className="self-start lg:self-end"
-        />
-      }
-    >
-      <ExplainContext value={explain}>
-        <Desktop className="mt-10">{children}</Desktop>
+    <Section id={id} title={title} lead={lead}>
+      <ExplainContext value={explain ? callouts : null}>
+        <Desktop className="scroll-tilt mt-10">{children}</Desktop>
       </ExplainContext>
-      {caption ? <PlainCaption label={t.ui.plainLabel} text={caption} /> : null}
       {explain ? <ExplainLegend callouts={callouts} /> : null}
+      <ExplainToggle
+        active={explain}
+        onToggle={() => setExplain((value) => !value)}
+        className="mt-5"
+      />
+      {caption ? <PlainCaption label={t.ui.plainLabel} text={caption} /> : null}
       <p className="mt-6 flex max-w-[52rem] flex-col gap-1 text-step-0 sm:flex-row sm:gap-3">
         <span className="shrink-0 font-semibold text-accent">{t.ui.benefitLabel}</span>
         <span className="text-muted">{benefit}</span>

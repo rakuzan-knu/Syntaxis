@@ -409,13 +409,15 @@ export function BrowserWindow({
 
       <div
         aria-live="polite"
-        className="relative flex shrink-0 items-center gap-3 border-t border-win-line px-3 py-2.5 sm:gap-5 sm:px-4"
+        className="@container relative flex shrink-0 items-center gap-3 border-t border-win-line px-3 py-2.5 sm:gap-5 sm:px-4"
       >
         <Callout n={4} className="-top-3 left-3" />
-        {scores.map((value, index) => (
-          <ScoreRing key={labels[index]} value={value} label={labels[index] ?? ''} size="sm" />
-        ))}
-        <p className="ml-auto hidden max-w-[12rem] text-right text-[0.6875rem] text-win-muted sm:block">
+        <div className="grid flex-1 grid-cols-4 justify-items-center @[26rem]:flex @[26rem]:flex-none @[26rem]:gap-3 sm:@[26rem]:gap-5">
+          {scores.map((value, index) => (
+            <ScoreRing key={labels[index]} value={value} label={labels[index] ?? ''} size="sm" />
+          ))}
+        </div>
+        <p className="ml-auto hidden max-w-[12rem] text-right text-[0.6875rem] text-win-muted @[26rem]:block">
           {audit === 'running' ? copy.auditing : copy.auditNote}
         </p>
       </div>

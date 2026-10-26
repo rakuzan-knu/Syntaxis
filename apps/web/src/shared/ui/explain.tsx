@@ -1,14 +1,32 @@
-import { use } from 'react';
+import { use, useRef } from 'react';
 import { Lightbulb, X } from 'lucide-react';
 import { useI18n } from '@/shared/i18n';
+import { useTip } from '@/shared/lib';
 import { ExplainContext } from './explainContext';
+import { FloatingTip } from './FloatingTip';
 
 export function Callout({ n, className = '' }: { n: number; className?: string }) {
-  const visible = use(ExplainContext);
-  if (!visible) return null;
+  const callouts = use(ExplainContext);
+  const ref = useRef<HTMLSpanElement>(null);
+  const tip = useTip(ref);
+  const text = callouts?.[n - 1];
+  if (!text) return null;
+
   return (
-    <span aria-hidden="true" className={`callout pointer-events-none absolute z-20 ${className}`}>
+    <span
+      ref={ref}
+      role="button"
+      tabIndex={0}
+      aria-label={`${n}. ${text}`}
+      {...tip.triggers}
+      className={`callout absolute z-20 cursor-help ${className}`}
+    >
       {n}
+      {tip.open ? (
+        <FloatingTip anchor={ref} className="rounded-xl px-3 py-2 text-step--1">
+          {text}
+        </FloatingTip>
+      ) : null}
     </span>
   );
 }

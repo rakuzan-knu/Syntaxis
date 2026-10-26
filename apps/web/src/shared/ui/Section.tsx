@@ -18,7 +18,7 @@ export function Section({ id, title, lead, children, aside, className = '' }: Se
     >
       <div className="mx-auto max-w-[76rem] px-gutter">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-          <div className="max-w-[44rem]">
+          <div className="scroll-reveal max-w-[44rem]">
             <h2 id={`${id}-title`} className="text-step-3 font-semibold tracking-[-0.03em]">
               {title}
             </h2>

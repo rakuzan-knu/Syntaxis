@@ -6,7 +6,7 @@ export function Brief() {
   const { t } = useI18n();
   return (
     <Section id="brief" title={t.brief.title} lead={t.brief.lead}>
-      <Desktop className="mt-10">
+      <Desktop className="scroll-tilt mt-10">
         <BriefComposer />
       </Desktop>
       <PlainCaption label={t.ui.plainLabel} text={t.brief.plain} />

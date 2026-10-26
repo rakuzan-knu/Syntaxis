@@ -105,7 +105,7 @@ export function DemoStore({
           <Guide
             label={step.target === 'open' ? step.label : null}
             side="left"
-            className="top-2.5 -left-1"
+            className="top-2.5 -left-3"
           />
         </button>
       </header>
@@ -166,16 +166,18 @@ function StoreHome({
               <span className="text-[0.8125rem] font-semibold tabular-nums">
                 {formatPrice(product.price, copy.currency)}
               </span>
-              <StoreButton
-                accent={accent}
-                variant="outline"
-                onClick={() => setCart(addToCart(cart, defaultLine(product.sku)))}
-              >
-                {copy.addToCart}
-              </StoreButton>
-              {index === 0 ? (
-                <Guide label={hint} side="left" className="right-[4.5rem] top-1/2 -mt-1.5" />
-              ) : null}
+              <span className="relative flex">
+                <StoreButton
+                  accent={accent}
+                  variant="outline"
+                  onClick={() => setCart(addToCart(cart, defaultLine(product.sku)))}
+                >
+                  {copy.addToCart}
+                </StoreButton>
+                {index === 0 ? (
+                  <Guide label={hint} side="top" className="-top-1.5 -right-1.5" />
+                ) : null}
+              </span>
             </span>
           </li>
         ))}

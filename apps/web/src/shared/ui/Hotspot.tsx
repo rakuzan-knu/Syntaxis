@@ -1,32 +1,67 @@
+import { useEffect, useRef } from 'react';
+import { useInView, useTimers, useTip } from '@/shared/lib';
+import { FloatingTip, type TipSide } from './FloatingTip';
+
 interface HotspotProps {
   label: string;
   visible: boolean;
   className?: string;
-  side?: 'right' | 'left' | 'bottom' | 'top';
+  side?: TipSide;
 }
 
-const SIDES = {
-  right: 'left-5 top-1/2 -translate-y-1/2',
-  left: 'right-5 top-1/2 -translate-y-1/2',
-  bottom: 'top-5 left-1/2 -translate-x-1/2',
-  top: 'bottom-5 left-1/2 -translate-x-1/2',
-} as const;
+const INTRO_MS = 3500;
+const INTRO_GAP_MS = 250;
+
+let nextIntroAt = 0;
+
+function reserveIntro(): number {
+  const now = performance.now();
+  const start = Math.max(now, nextIntroAt);
+  nextIntroAt = start + INTRO_MS + INTRO_GAP_MS;
+  return start - now;
+}
 
 export function Hotspot({ label, visible, className = '', side = 'right' }: HotspotProps) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const introduced = useRef(false);
+  const inView = useInView(ref, { amount: 0.5 });
+  const tip = useTip(ref);
+  const { flash, hide } = tip;
+  const { schedule, clear } = useTimers();
+
+  useEffect(() => {
+    if (!visible) {
+      clear();
+      hide();
+      return;
+    }
+    if (!inView || introduced.current) return;
+    introduced.current = true;
+    schedule(() => flash(INTRO_MS), reserveIntro());
+  }, [visible, inView, flash, hide, schedule, clear]);
+
   return (
     <span
       aria-hidden="true"
-      className={`pointer-events-none absolute z-20 transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'} ${className}`}
+      className={`absolute z-20 transition-opacity duration-500 ${visible ? 'opacity-100' : 'pointer-events-none opacity-0'} ${className}`}
     >
-      <span className="relative block size-3">
+      <span
+        ref={ref}
+        {...tip.triggers}
+        className="relative block size-3 cursor-help before:absolute before:-inset-2 before:content-['']"
+      >
         <span className="hotspot-ring absolute inset-0 rounded-full bg-accent" />
         <span className="absolute inset-0 rounded-full border-2 border-white bg-accent shadow-md" />
       </span>
-      <span
-        className={`absolute rounded-lg bg-ink px-2.5 py-1.5 text-step--2 font-medium whitespace-nowrap text-bg shadow-lg ${SIDES[side]}`}
-      >
-        {label}
-      </span>
+      {visible && tip.open ? (
+        <FloatingTip
+          anchor={ref}
+          side={side}
+          className="rounded-lg px-2.5 py-1.5 text-step--2 font-medium"
+        >
+          {label}
+        </FloatingTip>
+      ) : null}
     </span>
   );
 }

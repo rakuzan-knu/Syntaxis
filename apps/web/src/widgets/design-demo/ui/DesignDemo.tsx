@@ -223,7 +223,13 @@ export function DesignDemo() {
                 <span className="text-win-muted">Zerno /</span> {figma.pageNames[page]}
                 <ChevronDown aria-hidden="true" className="size-3.5" />
               </span>
-              <span className="ml-auto flex items-center gap-2 md:ml-0">
+              <span className="relative ml-auto flex items-center gap-2 md:ml-0">
+                <Hotspot
+                  label={copy.hints[1] ?? ''}
+                  visible={!touched}
+                  side="left"
+                  className="top-1/2 -left-5 -mt-1.5"
+                />
                 <span className="hidden -space-x-1.5 sm:flex">
                   <Avatar name="Oleh K" size="sm" />
                   <Avatar name="Mykhailo A" size="sm" />
@@ -238,12 +244,6 @@ export function DesignDemo() {
                   >
                     <Play aria-hidden="true" className="size-4 fill-current" />
                   </button>
-                  <Hotspot
-                    label={copy.hints[1] ?? ''}
-                    visible={!touched}
-                    side="bottom"
-                    className="top-7 left-2.5"
-                  />
                 </span>
                 <span className="rounded-md bg-win-accent px-3 py-1 text-[0.75rem] font-medium text-white">
                   Share
@@ -284,7 +284,7 @@ export function DesignDemo() {
                         label={copy.hints[0] ?? ''}
                         visible={!touched}
                         side="left"
-                        className="top-3 -left-2"
+                        className="-top-5 right-8"
                       />
                     ) : null}
                   </div>

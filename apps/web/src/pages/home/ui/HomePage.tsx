@@ -1,20 +1,23 @@
-import { ApiDemo } from '@/widgets/api-demo';
-import { Brief } from '@/widgets/brief';
 import { Closing } from '@/widgets/closing';
-import { DeployDemo } from '@/widgets/deploy-demo';
-import { DesignDemo } from '@/widgets/design-demo';
 import { Faq } from '@/widgets/faq';
 import { Hero } from '@/widgets/hero';
-import { OutstaffDemo } from '@/widgets/outstaff-demo';
-import { PerformanceDemo } from '@/widgets/performance-demo';
 import { Process } from '@/widgets/process';
-import { SecurityDemo } from '@/widgets/security-demo';
 import { Services } from '@/widgets/services';
 import { SiteFooter } from '@/widgets/site-footer';
 import { SiteHeader } from '@/widgets/site-header';
 import { Terms } from '@/widgets/terms';
 import { useI18n } from '@/shared/i18n';
-import { useDocumentTitle } from '@/shared/lib';
+import { deferred, useDocumentTitle } from '@/shared/lib';
+
+const DesignDemo = deferred(() => import('@/widgets/design-demo').then((m) => m.DesignDemo));
+const ApiDemo = deferred(() => import('@/widgets/api-demo').then((m) => m.ApiDemo));
+const DeployDemo = deferred(() => import('@/widgets/deploy-demo').then((m) => m.DeployDemo));
+const SecurityDemo = deferred(() => import('@/widgets/security-demo').then((m) => m.SecurityDemo));
+const PerformanceDemo = deferred(() =>
+  import('@/widgets/performance-demo').then((m) => m.PerformanceDemo),
+);
+const OutstaffDemo = deferred(() => import('@/widgets/outstaff-demo').then((m) => m.OutstaffDemo));
+const Brief = deferred(() => import('@/widgets/brief').then((m) => m.Brief));
 
 export function HomePage() {
   const { t } = useI18n();

@@ -2,11 +2,12 @@ import { useEffect, useState, type RefObject } from 'react';
 
 interface InViewOptions {
   amount?: number;
+  margin?: string;
 }
 
 export function useInView<T extends Element>(
   ref: RefObject<T | null>,
-  { amount = 0 }: InViewOptions = {},
+  { amount = 0, margin = '0px' }: InViewOptions = {},
 ): boolean {
   const [inView, setInView] = useState(false);
 
@@ -20,11 +21,11 @@ export function useInView<T extends Element>(
           observer.disconnect();
         }
       },
-      { threshold: amount },
+      { threshold: amount, rootMargin: margin },
     );
     observer.observe(element);
     return () => observer.disconnect();
-  }, [ref, amount, inView]);
+  }, [ref, amount, margin, inView]);
 
   return inView;
 }

@@ -57,7 +57,7 @@ export function SiteFooter({ slug }: { slug?: LegalSlug | undefined }) {
   ];
 
   return (
-    <footer className="overflow-hidden border-t border-line">
+    <footer className="overflow-clip border-t border-line">
       <div className="mx-auto max-w-[76rem] px-gutter pt-14 md:pt-16">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))] lg:gap-8">
           <div className="sm:col-span-2 lg:col-span-1">
@@ -111,24 +111,22 @@ export function SiteFooter({ slug }: { slug?: LegalSlug | undefined }) {
         </div>
       </div>
 
-      <svg
+      <div
         aria-hidden="true"
-        focusable="false"
-        viewBox="0 0 1000 170"
-        className="mx-auto block w-full max-w-[76rem] px-gutter text-ink/[0.06] select-none"
+        className="mx-auto max-w-[76rem] px-gutter text-ink/[0.06] select-none [container-type:inline-size]"
       >
-        <text
-          x="0"
-          y="200"
-          textLength="1000"
-          lengthAdjust="spacingAndGlyphs"
-          fontSize="250"
-          fontWeight="600"
-          fill="currentColor"
-        >
-          {BRAND}
-        </text>
-      </svg>
+        <p className="flex justify-between pt-4 pb-6 text-[23cqi] leading-[1.05] font-semibold">
+          {[...BRAND].map((letter, index) => (
+            <span
+              key={`${letter}-${index}`}
+              className="scroll-letter inline-block"
+              style={{ '--i': index }}
+            >
+              {letter}
+            </span>
+          ))}
+        </p>
+      </div>
     </footer>
   );
 }

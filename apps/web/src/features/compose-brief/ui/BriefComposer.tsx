@@ -26,13 +26,20 @@ interface InlineSelectProps {
 const TYPING_MS = 900;
 
 function InlineSelect({ label, value, choices, onChange }: InlineSelectProps) {
+  const selected = choices.find((choice) => choice.value === value)?.label ?? '';
   return (
-    <span className="relative inline-flex items-baseline">
+    <span className="relative inline-block leading-normal">
+      <span
+        aria-hidden="true"
+        className="invisible block py-0.5 pr-7 pl-2 font-medium whitespace-nowrap"
+      >
+        {selected}
+      </span>
       <select
         aria-label={label}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="cursor-pointer appearance-none rounded-md bg-win-accent/10 py-0.5 pr-7 pl-2 font-medium text-win-accent [field-sizing:content] hover:bg-win-accent/15"
+        className="absolute inset-0 w-full cursor-pointer appearance-none rounded-md bg-win-accent/10 py-0.5 pr-7 pl-2 font-medium text-win-accent hover:bg-win-accent/15"
       >
         {choices.map((choice) => (
           <option key={choice.value} value={choice.value} className="bg-win text-win-text">

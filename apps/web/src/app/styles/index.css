@@ -426,6 +426,50 @@
   }
 }
 
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    translate: 0 2.5rem;
+  }
+}
+
+@keyframes tilt-in {
+  from {
+    opacity: 0.5;
+    transform: perspective(1400px) rotateX(14deg) scale(0.93);
+  }
+}
+
+@keyframes letter-rise {
+  from {
+    opacity: 0;
+    translate: 0 40%;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .scroll-reveal {
+      animation: reveal-up var(--ease-out) both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 80%;
+    }
+
+    .scroll-tilt {
+      transform-origin: 50% 100%;
+      animation: tilt-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 40%;
+    }
+
+    .scroll-letter {
+      animation: letter-rise var(--ease-out) both;
+      animation-timeline: view();
+      animation-range: entry calc(var(--i) * 6%) entry calc(50% + var(--i) * 6%);
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

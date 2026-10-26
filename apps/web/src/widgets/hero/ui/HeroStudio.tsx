@@ -115,7 +115,7 @@ export function HeroStudio() {
               onFocus={takeOver}
             />
           </div>
-          <div className="order-1 h-[34rem] lg:absolute lg:right-0 lg:bottom-0 lg:z-10 lg:h-[35rem] lg:w-[40%]">
+          <div className="order-1 h-[38rem] lg:absolute lg:right-0 lg:bottom-0 lg:z-10 lg:h-[35rem] lg:w-[40%]">
             <BrowserWindow
               copy={copy}
               headline={headline}

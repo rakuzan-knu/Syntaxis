@@ -31,7 +31,7 @@ export function Hero() {
         </div>
 
         <div className="mt-14 md:mt-16">
-          <ExplainContext value={explain}>
+          <ExplainContext value={explain ? t.build.callouts : null}>
             <HeroStudio />
           </ExplainContext>
           {explain ? <ExplainLegend callouts={t.build.callouts} /> : null}

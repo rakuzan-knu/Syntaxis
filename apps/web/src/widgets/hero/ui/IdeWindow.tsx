@@ -204,7 +204,7 @@ export function IdeWindow({
             <Hotspot
               label={hints[1] ?? ''}
               visible={showHints && !picker}
-              className="top-1/2 -right-5 -translate-y-1/2"
+              className="top-1/2 -right-[calc(2ch+1.25rem)] -translate-y-1/2"
               side="bottom"
             />
             {picker ? (
@@ -261,8 +261,8 @@ export function IdeWindow({
             />
             <Hotspot
               label={hints[0] ?? ''}
-              visible={showHints && !typing}
-              className="-top-1 left-6"
+              visible={showHints}
+              className="top-1/2 -left-[calc(6ch+0.375rem)] -translate-y-1/2"
               side="top"
             />
           </span>

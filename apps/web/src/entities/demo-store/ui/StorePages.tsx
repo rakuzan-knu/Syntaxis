@@ -66,7 +66,7 @@ function CatalogPage({ copy, accent, cart, hint, navigate, setCart }: StorePageP
                   {copy.addToCart}
                 </StoreButton>
                 {index === 0 ? (
-                  <Guide label={hint} side="left" className="right-[4.5rem] top-[1.1rem]" />
+                  <Guide label={hint} side="top" className="top-1.5 -right-1.5" />
                 ) : null}
               </span>
             </span>
@@ -178,11 +178,13 @@ function ProductPage({
             <span className="text-[1.125rem] font-semibold tabular-nums">
               {formatPrice(unitPrice(line, copy.products), copy.currency)}
             </span>
-            <StoreButton accent={accent} onClick={add}>
-              {added ? <Check aria-hidden="true" className="size-4" /> : null}
-              {added ? copy.added : copy.addToCart}
-            </StoreButton>
-            <Guide label={hint} side="top" className="top-1 left-36" />
+            <span className="relative">
+              <StoreButton accent={accent} onClick={add}>
+                {added ? <Check aria-hidden="true" className="size-4" /> : null}
+                {added ? copy.added : copy.addToCart}
+              </StoreButton>
+              <Guide label={hint} side="top" className="-top-1.5 -right-1.5" />
+            </span>
           </div>
         </div>
       </div>
