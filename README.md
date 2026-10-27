@@ -1,77 +1,62 @@
+<img src="https://raw.githubusercontent.com/subvincdebian/subvincdebian/main/assets/repo-Syntaxis.svg" alt="Syntaxis project overview" width="100%" />
+
 # Syntaxis
 
-Website of Syntaxis, a studio building custom websites and web applications.
+A bilingual web-studio website with interactive interface demos and a project brief composer. Ukrainian at `/`, English at `/en`.
 
-Ukrainian at `/`, English at `/en`. Contact: [Telegram @gmblesssed](https://t.me/gmblesssed).
+[Website](https://syntaxis-pi.vercel.app) · [Frontend source](apps/web/src) · [Design](DESIGN.md) · [Architecture](docs/architecture/frontend.md)
 
-## Stack
+## Highlights
 
-- React 19, TypeScript (strict), Vite 8, Tailwind CSS 4
-- Feature-Sliced Design, enforced by `eslint-plugin-boundaries`
-- Build-time prerendering of every route to static HTML (SEO, instant first paint)
-- pnpm workspace + Nx, Vitest, ESLint, Prettier, Husky, commitlint
-- Deployed as static files on Vercel
+- Responsive studio pages, service sections and localized content.
+- Interactive demo windows, a command palette and a project brief composer.
+- Typed English and Ukrainian dictionaries with matching structures.
+- Build-time prerendering of application routes, including localized legal pages, with sitemap and metadata generation.
 
-## Getting started
+The storefront, API, payment and deployment widgets are local demonstrations. They illustrate interface behavior and do not establish production integrations or customer results.
 
-```bash
-pnpm install
+**Stack:** React 19, TypeScript, Vite 8, Tailwind CSS 4, Feature-Sliced Design, pnpm workspaces and Nx. Vitest, ESLint and Prettier provide development checks.
+
+## Run locally
+
+Use **Node.js 24.11+** and **pnpm 12.4.2**, as specified in `package.json`.
+
+```sh
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-| Command          | What it does                                          |
-| :--------------- | :---------------------------------------------------- |
-| `pnpm dev`       | Dev server on http://localhost:5173                   |
-| `pnpm build`     | Type-check, build, SSR-prerender `/`, `/en` and `404` |
-| `pnpm preview`   | Serve the production build                            |
-| `pnpm typecheck` | TypeScript project build                              |
-| `pnpm lint`      | ESLint, including FSD layer boundaries                |
-| `pnpm test`      | Vitest                                                |
-| `pnpm validate`  | Everything above plus Prettier check                  |
+| Command | Purpose |
+| --- | --- |
+| `pnpm dev` | Start the development server |
+| `pnpm build` | Type-check, build and prerender the website |
+| `pnpm preview` | Preview the production build |
+| `pnpm typecheck` | Check TypeScript projects |
+| `pnpm lint` | Check code and architectural boundaries |
+| `pnpm test` | Run Vitest |
+| `pnpm validate` | Run type, lint, test and formatting checks |
 
-## Repository layout
+## Source map
 
-```
-apps/web/
-  index.html            HTML template with <!--app-head--> and <!--app-html--> slots
-  scripts/prerender.ts  Renders every route to dist/*.html, writes sitemap.xml and robots.txt
-  src/
-    main.tsx            Client entry: hydrates prerendered HTML
-    entry-server.tsx    Server entry used only by the prerender step
-    app/                Routes, providers, global styles and design tokens
-    pages/              home, not-found
-    widgets/            Hero, interactive demo windows (design, api, deploy, security, performance, outstaff) and page sections
-    features/           compose-brief, switch-locale
-    entities/           service
-    shared/             config (site, SEO), i18n (dictionaries), lib (highlight, useAutoplay), ui (Window, CodeBlock)
-docs/                   Architecture notes and ADRs
-```
+| Area | Source |
+| --- | --- |
+| Routes and providers | [apps/web/src/app](apps/web/src/app/) |
+| Home and legal pages | [apps/web/src/pages](apps/web/src/pages/) |
+| Brief composer | [features/compose-brief](apps/web/src/features/compose-brief/) |
+| Command palette | [features/command-palette](apps/web/src/features/command-palette/) |
+| Local demo state | [entities/demo-store](apps/web/src/entities/demo-store/) |
+| Static rendering | [apps/web/scripts/prerender.ts](apps/web/scripts/prerender.ts) |
 
-## Editing content
+<details>
+<summary>Content editing and deployment</summary>
 
-All copy lives in two typed dictionaries:
+Copy lives in typed [Ukrainian](apps/web/src/shared/i18n/dictionaries/uk.ts) and [English](apps/web/src/shared/i18n/dictionaries/en.ts) dictionaries. Contact details and the default site URL live in [site.ts](apps/web/src/shared/config/site.ts).
 
-- `apps/web/src/shared/i18n/dictionaries/uk.ts`
-- `apps/web/src/shared/i18n/dictionaries/en.ts`
+Vercel settings are in [vercel.json](vercel.json). Set `VITE_SITE_URL` to the deployment's canonical URL for metadata, language links and the sitemap. The source configuration currently defaults to `https://syntaxis-dev.vercel.app`.
 
-Both implement the `Dictionary` type, so a missing or extra field fails the type check. A test also
-verifies that both locales have the same structure and the same brief options.
+The existing deployment notes use `ENABLE_EXPERIMENTAL_COREPACK=1` to select the pinned pnpm version. Review provider runtime support when configuring a new deployment.
 
-The Telegram handle and site URL are in `apps/web/src/shared/config/site.ts`.
-
-## Deploying to Vercel
-
-1. Import `rakuzan-knu/Syntaxis` in Vercel. Settings come from `vercel.json`.
-2. Add environment variables:
-   - `ENABLE_EXPERIMENTAL_COREPACK=1`, so Vercel uses the pnpm version pinned in `package.json`.
-   - `VITE_SITE_URL=https://your-domain`, used for canonical URLs, hreflang, Open Graph and the
-     sitemap. Defaults to `https://syntaxis-dev.vercel.app`.
-3. Deploy. Security headers (CSP, HSTS, frame and permissions policies) and immutable caching for
-   hashed assets are configured in `vercel.json`.
-
-## Design
-
-See [DESIGN.md](DESIGN.md).
+</details>
 
 ## License
 
