@@ -26,26 +26,26 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-| Command | Purpose |
-| --- | --- |
-| `pnpm dev` | Start the development server |
-| `pnpm build` | Type-check, build and prerender the website |
-| `pnpm preview` | Preview the production build |
-| `pnpm typecheck` | Check TypeScript projects |
-| `pnpm lint` | Check code and architectural boundaries |
-| `pnpm test` | Run Vitest |
-| `pnpm validate` | Run type, lint, test and formatting checks |
+| Command          | Purpose                                     |
+| ---------------- | ------------------------------------------- |
+| `pnpm dev`       | Start the development server                |
+| `pnpm build`     | Type-check, build and prerender the website |
+| `pnpm preview`   | Preview the production build                |
+| `pnpm typecheck` | Check TypeScript projects                   |
+| `pnpm lint`      | Check code and architectural boundaries     |
+| `pnpm test`      | Run Vitest                                  |
+| `pnpm validate`  | Run type, lint, test and formatting checks  |
 
 ## Source map
 
-| Area | Source |
-| --- | --- |
-| Routes and providers | [apps/web/src/app](apps/web/src/app/) |
-| Home and legal pages | [apps/web/src/pages](apps/web/src/pages/) |
-| Brief composer | [features/compose-brief](apps/web/src/features/compose-brief/) |
-| Command palette | [features/command-palette](apps/web/src/features/command-palette/) |
-| Local demo state | [entities/demo-store](apps/web/src/entities/demo-store/) |
-| Static rendering | [apps/web/scripts/prerender.ts](apps/web/scripts/prerender.ts) |
+| Area                 | Source                                                             |
+| -------------------- | ------------------------------------------------------------------ |
+| Routes and providers | [apps/web/src/app](apps/web/src/app/)                              |
+| Home and legal pages | [apps/web/src/pages](apps/web/src/pages/)                          |
+| Brief composer       | [features/compose-brief](apps/web/src/features/compose-brief/)     |
+| Command palette      | [features/command-palette](apps/web/src/features/command-palette/) |
+| Local demo state     | [entities/demo-store](apps/web/src/entities/demo-store/)           |
+| Static rendering     | [apps/web/scripts/prerender.ts](apps/web/scripts/prerender.ts)     |
 
 <details>
 <summary>Content editing and deployment</summary>
