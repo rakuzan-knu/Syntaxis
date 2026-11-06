@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/subvincdebian/subvincdebian/228fedbb64bbc9c14d464b63a747f10ad5449c71/assets/repo-Syntaxis.svg" alt="Syntaxis project overview" width="100%" />
+<img src="apps/web/public/social-cover-20261106.jpg" alt="Syntaxis — interactive web studio" width="100%" />
 
 # Syntaxis
 
@@ -52,7 +52,7 @@ pnpm dev
 
 Copy lives in typed [Ukrainian](apps/web/src/shared/i18n/dictionaries/uk.ts) and [English](apps/web/src/shared/i18n/dictionaries/en.ts) dictionaries. Contact details and the default site URL live in [site.ts](apps/web/src/shared/config/site.ts).
 
-Vercel settings are in [vercel.json](vercel.json). Set `VITE_SITE_URL` to the deployment's canonical URL for metadata, language links and the sitemap. The source configuration currently defaults to `https://syntaxis-dev.vercel.app`.
+Vercel settings are in [vercel.json](vercel.json). Set `VITE_SITE_URL` to the deployment's canonical URL for metadata, language links and the sitemap. The source configuration currently defaults to `https://syntaxis-pi.vercel.app`.
 
 The existing deployment notes use `ENABLE_EXPERIMENTAL_COREPACK=1` to select the pinned pnpm version. Review provider runtime support when configuring a new deployment.
 

@@ -22,7 +22,10 @@ interface PageMeta {
   description: string;
 }
 
-const OG_IMAGES: Record<Locale, string> = { uk: '/og.png', en: '/og-en.png' };
+const OG_IMAGES: Record<Locale, string> = {
+  uk: '/social-cover-20261106.jpg',
+  en: '/social-cover-20261106.jpg',
+};
 
 const SECURITY_TXT_EXPIRES = '2027-10-25T00:00:00.000Z';
 
@@ -189,8 +192,8 @@ export function buildHead(route: PrerenderRoute, assets: HeadAssets): string {
         `<meta property="og:locale:alternate" content="${getDictionary(locale).meta.ogLocale}" />`,
     ),
     `<meta property="og:image" content="${SITE_URL}${OG_IMAGES[route.locale]}" />`,
-    '<meta property="og:image:width" content="1200" />',
-    '<meta property="og:image:height" content="630" />',
+    '<meta property="og:image:width" content="1672" />',
+    '<meta property="og:image:height" content="941" />',
     `<meta property="og:image:alt" content="${escapeHtml(t.meta.ogImageAlt)}" />`,
     '<meta name="twitter:card" content="summary_large_image" />',
     `<meta name="twitter:title" content="${escapeHtml(title)}" />`,
